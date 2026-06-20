@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import {
   validator as vValidator,
   resolver,
@@ -8,17 +8,23 @@ import {
 import * as v from "valibot";
 import { Scalar } from '@scalar/hono-api-reference'
 // Middlewares
-import { logger as loggerMiddleware } from 'hono/logger';
+import { structuredLogger } from '@hono/structured-logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { cors } from 'hono/cors';
 import { compress } from 'hono/compress';
+// utils
+import  {logger} from "./utils/logger.js"
 
 const app = new Hono();
 
 
 const base_response = v.object({message: v.string()})
 
-app.use(loggerMiddleware());
+app.use(
+  structuredLogger({
+    createLogger: () => logger,
+  })
+)
 app.use(secureHeaders());
 app.use(cors());
 app.use(compress());

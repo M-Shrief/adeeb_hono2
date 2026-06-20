@@ -213,6 +213,9 @@ importers:
       '@hono/standard-validator':
         specifier: ^0.2.2
         version: 0.2.2(@standard-schema/spec@1.1.0)(hono@4.12.26)
+      '@hono/structured-logger':
+        specifier: ^0.1.0
+        version: 0.1.0(hono@4.12.26)
       '@scalar/hono-api-reference':
         specifier: ^0.11.4
         version: 0.11.4(hono@4.12.26)
@@ -728,6 +731,12 @@ packages:
     peerDependencies:
       '@standard-schema/spec': ^1.0.0
       hono: '>=3.9.0'
+
+  '@hono/structured-logger@0.1.0':
+    resolution: {integrity: sha512-06QUXbNnvb6lSJz/79WcC8yhGCbWT4EO2Zq3rodzQLwUT40OVXNerCKXUcwv4KgVZGKhVebzv1Vr84w/GKEl6Q==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      hono: '>=4.0.0'
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -1445,6 +1454,10 @@ snapshots:
   '@hono/standard-validator@0.2.2(@standard-schema/spec@1.1.0)(hono@4.12.26)':
     dependencies:
       '@standard-schema/spec': 1.1.0
+      hono: 4.12.26
+
+  '@hono/structured-logger@0.1.0(hono@4.12.26)':
+    dependencies:
       hono: 4.12.26
 
   '@pinojs/redact@0.4.0': {}
