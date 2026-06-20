@@ -1,6 +1,5 @@
-import { Hono, type MiddlewareHandler } from "hono";
+import { Hono } from "hono";
 import {
-  validator as vValidator,
   resolver,
   describeRoute,
   openAPIRouteHandler
