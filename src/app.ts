@@ -11,6 +11,7 @@ import { structuredLogger } from '@hono/structured-logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { cors } from 'hono/cors';
 import { compress } from 'hono/compress';
+import { rateLimiter } from "hono-rate-limiter";
 // utils
 import  {logger} from "./utils/logger.js"
 import { base_response_schema } from "./utils/api.js"
@@ -27,7 +28,14 @@ app.use(
 app.use(secureHeaders());
 app.use(cors());
 app.use(compress());
-
+// Apply rate limiting middleware globally, and will apply it surgically later to each route.
+app.use(
+  rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 1000, // Limit each client to 100 requests per window
+    keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "", // Use IP address as key
+  })
+);
 
 app.get(
   '/', 
