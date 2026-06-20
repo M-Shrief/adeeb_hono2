@@ -1,7 +1,7 @@
+import { relations } from "drizzle-orm";
 import { pgTable, pgEnum, varchar, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
 ///
-import { adeeb_id, chosen_verses_id_optional, id, order_id, poem_id, poem_id_optional, prose_qoute_id_optional, qoute, qoute_optional, reviewed, tags, timestamps, user_id_optional, verses_fields, verses_fields_optional } from "./columns.js"
-import { relations } from "drizzle-orm";
+import { adeeb_id, chosen_verses_id_optional, id, order_id, poem_id, poem_id_optional, prose_qoute_id_optional, qoute, qoute_optional, reviewed, tags, timestamps, user_id_optional, verses, verses_optional, is_couplet, is_couplet_optional } from "./columns.js"
 
 
 // Didn't use enum for preformance, so we just use as const
@@ -30,7 +30,8 @@ export const adeeb_table = pgTable('adeebs', {
 export const poem_table = pgTable('poems', {
     ...id,
     intro: varchar({ length: 256 }).unique().notNull(),
-    ...verses_fields,
+    ...verses,
+    ...is_couplet,
     ...reviewed,
     ...timestamps,
     // relations
@@ -41,7 +42,8 @@ export const poem_table = pgTable('poems', {
 export const chosen_verses_table = pgTable('chosen_verses', {
     ...id,
     ...tags, 
-    ...verses_fields,
+    ...verses,
+    ...is_couplet,
     ...reviewed,
     ...timestamps,
     // relations
@@ -125,7 +127,8 @@ export const prints_table = pgTable('prints', {
     outfit_color: varchar({ length: 64 }).notNull(),    
 
     ...qoute_optional,
-    ...verses_fields_optional,
+    ...verses_optional,
+    ...is_couplet_optional,
 
     // relations
     ...order_id,

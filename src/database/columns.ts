@@ -16,19 +16,23 @@ export const id = {
   id: uuid().primaryKey().defaultRandom(),
 }
 
-export const verses_fields = {
+export const verses = {
   verses: varchar({length: 256})
     .array()
     .notNull(),
     // .default(sql`'{}'::VARCHAR[]`), // to set an empty array
-
-  is_couplet: boolean().default(true).notNull()
 }
-export const verses_fields_optional = {
+export const verses_optional = {
   verses: varchar({length: 256})
     .array(),
     // .default(sql`'{}'::VARCHAR[]`), // to set an empty array
 
+}
+
+export const is_couplet = {
+  is_couplet: boolean().default(true).notNull()
+}
+export const is_couplet_optional = {
   is_couplet: boolean()
 }
 
