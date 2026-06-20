@@ -13,11 +13,11 @@ import { cors } from 'hono/cors';
 import { compress } from 'hono/compress';
 // utils
 import  {logger} from "./utils/logger.js"
+import { base_response_schema } from "./utils/api.js"
 
 const app = new Hono();
 
 
-const base_response = v.object({message: v.string()})
 
 app.use(
   structuredLogger({
@@ -70,7 +70,7 @@ app.get(
         description: "Successful response",
         content: {
           "application/json": {
-            schema: resolver(base_response),
+            schema: resolver(base_response_schema),
           },
         },
       },
