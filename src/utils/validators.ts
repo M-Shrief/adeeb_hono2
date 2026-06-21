@@ -1,0 +1,50 @@
+import {
+  validator as vValidator,
+
+} from "hono-openapi";
+import {  object } from 'valibot';
+///
+import { HttpStatusCode } from "./api.js"
+import { uuid_schema } from "./schemas.js"
+
+
+
+/**
+ * It takes errors of type StandardSchemaV1.Issue[], but we can't import it so we type it as any[]
+ * we only return the error's message & path fields. * 
+ * @param errors
+ * @returns 
+ */
+const format_errors = (errors: readonly any[]) => {
+  return errors.map((e: any) => { return {message: e.message, path: e.path} })
+}
+
+export const json_validator = (schema: any, message?: string) => {
+    return vValidator('json', schema, (result, c) => {
+        if(!result.success) { 
+            return c.json(
+                {
+                    message: message ?? "Invalid data",
+                    errors: format_errors(result.error)
+                },
+                HttpStatusCode.UNPROCESSABLE_ENTITY,
+            )
+        }        
+    })
+}
+
+export const param_validator = (schema: any, message?: string) =>
+  vValidator('param', schema, (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          message: message ?? 'param validation error',
+          errors: result.error
+        },
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+      );
+    }
+  });
+
+export const id_param_validator = () =>
+  param_validator(object({ id: uuid_schema }), 'Not Found');
