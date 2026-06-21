@@ -5,7 +5,7 @@ import {
 /////
 import { db } from "../../database/index.js"
 import { adeeb_table } from "../../database/schemas.js"
-import { create_one_req, create_one_res } from './schema.js'
+import { create_many_req, create_many_res, create_one_req, create_one_res } from './schema.js'
 ///// Utils
 import { json_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema , get_described_route } from '../../utils/api.js';
@@ -38,6 +38,32 @@ adeeb_route.post(
             return c.json(new_adeeb, HttpStatusCode.CREATED)
         } catch(e) {
             logger.error({error:e}, "Error: create Adeeb")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
+
+adeeb_route.post(
+    "/many",
+    describeRoute({
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Successful response", create_many_res),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema)
+        },
+    }),
+    json_validator(create_many_req, "Invalid data, can't be used to create many Adeebs"),
+    async function create_many_adeeb(c) {
+        try {
+            let new_data = await c.req.json()
+            let new_adeebs = await db
+                .insert(adeeb_table)
+                .values(new_data)
+                .onConflictDoNothing({ target: [adeeb_table.name]})
+                .returning()
+
+            return c.json({created_items: new_adeebs, success_count: new_adeebs.length, failed_count: new_data.length - new_adeebs.length}, HttpStatusCode.CREATED)
+        } catch(e) {
+            logger.error({error:e}, "Error: creating multiple Adeebs")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }

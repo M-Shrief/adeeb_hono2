@@ -39,3 +39,17 @@ export const create_one_res = object({
   created_at, 
   updated_at,
 });
+
+export const create_many_req = array(create_one_req)
+export const create_many_res = object({
+  created_items: array(create_one_res),
+  success_count: number(),
+  failed_count: number(),
+})
+
+export const update_req = object({
+  name: optional(name_schema),
+  time_period: optional(time_period_schema),
+  bio: optional(bio_schema),
+  reviewed: optional(reviewed_schema),
+});
