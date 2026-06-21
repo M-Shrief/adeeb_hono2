@@ -16,6 +16,8 @@ import { trimTrailingSlash } from 'hono/trailing-slash'
 // utils
 import  {logger} from "./utils/logger.js"
 import { base_response_schema } from "./utils/api.js"
+// Components
+import { adeeb_route } from "./components/adeebs/route.js";
 
 const app = new Hono();
 
@@ -139,5 +141,8 @@ app.get(
     darkMode: true
   })
 )
+
+app.route("/api/adeebs", adeeb_route)
+
 
 export { app }
