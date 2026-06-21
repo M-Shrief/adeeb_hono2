@@ -15,7 +15,7 @@ import { rateLimiter } from "hono-rate-limiter";
 import { trimTrailingSlash } from 'hono/trailing-slash'
 // utils
 import  {logger} from "./utils/logger.js"
-import { base_response_schema } from "./utils/api.js"
+import { HttpStatusCode, base_response_schema, get_described_route } from "./utils/api.js"
 // Components
 import { adeeb_route } from "./components/adeebs/route.js";
 
@@ -44,22 +44,19 @@ app.use(
 app.get(
   '/', 
   describeRoute({
-    operationId: "index",
+    summary: "Index metadata",
     responses: {
-      200: {
-        description: "Successful response",
-        content: {
-          "application/json": {
-            schema: resolver(v.object({
-              title: v.string(),
-              description: v.string(),
-              version: v.string(),
-              docs: v.string(),
-              openapi: v.string()
-            })),
-          },
-        },
-      },
+      ...get_described_route(
+          HttpStatusCode.OK,
+          "Successful  response",
+          v.object({
+            title: v.string(),
+            description: v.string(),
+            version: v.string(),
+            docs: v.string(),
+            openapi: v.string()
+          })
+        )
     },
   }),
   (c) => {
@@ -77,15 +74,9 @@ app.get(
 app.get(
   '/ping', 
   describeRoute({
+    summary: "Ping",
     responses: {
-      200: {
-        description: "Successful response",
-        content: {
-          "application/json": {
-            schema: resolver(base_response_schema),
-          },
-        },
-      },
+      ...get_described_route(HttpStatusCode.OK, "Pinged",base_response_schema),
     },
   }),
   async (c) => {
@@ -98,6 +89,7 @@ app.get(
 app.get(
   "/openapi.json",
   describeRoute({
+    summary: "OpenAPI",
     responses: {
       200: {
         description: "Get OpenAPI spec",
@@ -128,6 +120,7 @@ app.get(
 app.get(
   '/docs',
   describeRoute({
+    summary: "Scalar Docs",
     responses: {
       200: {
         description: "Scalar docs",
