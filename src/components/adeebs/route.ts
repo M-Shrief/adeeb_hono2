@@ -16,6 +16,8 @@ export const adeeb_route = new Hono()
 adeeb_route.post(
     "/",
     describeRoute({
+        tags: ["Adeeb"],
+        summary: "Create One",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful added Adeeb", create_one_res),
            ...get_described_route(HttpStatusCode.NOT_ACCEPTABLE, "Adeeb already exists", base_response_schema),
@@ -46,6 +48,8 @@ adeeb_route.post(
 adeeb_route.post(
     "/many",
     describeRoute({
+        tags: ["Adeeb"],
+        summary: "Create Many",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful response", create_many_res),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema)
