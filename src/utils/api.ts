@@ -1,7 +1,53 @@
 import * as v from "valibot";
-
+import {
+  resolver,
+} from "hono-openapi";
 
 export const base_response_schema = v.object({message: v.string()})
+
+type RouteDescription = {
+  description: string,
+  content: {
+    [key: string]: {
+      schema: any
+    }
+  }
+}
+type DescribedRouteType = {
+  [key: number]: RouteDescription; // Keys are numbers, values are any
+};
+
+/**
+ * Used to shorten boilerplate needed to describe route's responses for OpenAPI.
+ * 
+ * It's used like:
+ *     describeRoute({
+ * 
+ *         responses: {
+ * 
+ *            ...get_described_route(HttpStatusCode.OK, "Successful response", create_many_res),
+ * 
+ *            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema)
+ * 
+ *          },
+ * 
+ *     }),
+
+ */
+export function get_described_route(http_status: number, description: string, schema: any) {
+  let result: DescribedRouteType = {}
+  result[http_status] = {
+    description: description,
+    content: {
+      "application/json": {
+          schema: resolver(schema),
+      }
+    }
+  }
+
+  return result
+}
+
 
 /**
  * @see {@link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes}
