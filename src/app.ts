@@ -12,6 +12,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import { cors } from 'hono/cors';
 import { compress } from 'hono/compress';
 import { rateLimiter } from "hono-rate-limiter";
+import { trimTrailingSlash } from 'hono/trailing-slash'
 // utils
 import  {logger} from "./utils/logger.js"
 import { base_response_schema } from "./utils/api.js"
@@ -25,6 +26,7 @@ app.use(
     createLogger: () => logger,
   })
 )
+app.use(trimTrailingSlash()) // set standard to trim trailing slash to all requests
 app.use(secureHeaders());
 app.use(cors());
 app.use(compress());
