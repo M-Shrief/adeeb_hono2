@@ -10,7 +10,7 @@ export const base_response_schema = object({message: string()})
 
 type RouteDescription = {
   description: string,
-  content: {
+  content?: {
     [key: string]: {
       schema: any
     }
@@ -37,14 +37,20 @@ type DescribedRouteType = {
  *     }),
 
  */
-export function get_described_route(http_status: number, description: string, schema: any) {
+export function get_described_route(http_status: number, description: string, schema?: any) {
   let result: DescribedRouteType = {}
-  result[http_status] = {
-    description: description,
-    content: {
-      "application/json": {
-          schema: resolver(schema),
+  if (schema) {
+    result[http_status] = {
+      description: description,
+      content: {
+        "application/json": {
+            schema: resolver(schema),
+        }
       }
+    }
+  } else {
+    result[http_status] = {
+      description: description,
     }
   }
 
