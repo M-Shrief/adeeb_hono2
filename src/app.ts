@@ -18,6 +18,7 @@ import  {logger} from "./utils/logger.js"
 import { HttpStatusCode, base_response_schema, get_described_route } from "./utils/api.js"
 // Components
 import { adeeb_route } from "./components/adeebs/route.js";
+import { poem_route } from "./components/poems/route.js";
 
 const app = new Hono();
 
@@ -136,6 +137,7 @@ app.get(
 )
 
 app.route("/api/v1", adeeb_route)
+app.route("/api/v1", poem_route)
 
 
 export { app }
