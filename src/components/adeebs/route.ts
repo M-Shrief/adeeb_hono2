@@ -36,13 +36,15 @@ adeeb_route.get(
             await db.select({...rest}).from(adeeb_table).limit(limit).offset(offset),
             await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(adeeb_table)
         ])
+        
+        let total_count = counts[0] ? counts[0].total_count : 0 
 
         return c.json(
             {
                 data: adeebs,
                 limit, 
                 offset, 
-                total_count: counts[0].total_count
+                total_count: total_count
             },
             HttpStatusCode.OK
         )
