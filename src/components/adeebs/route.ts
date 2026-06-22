@@ -104,7 +104,7 @@ adeeb_route.post(
         summary: "Create One",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful added Adeeb", create_one_res),
-           ...get_described_route(HttpStatusCode.NOT_ACCEPTABLE, "Adeeb already exists", base_response_schema),
+           ...get_described_route(HttpStatusCode.CONFLICT, "Adeeb already exists", base_response_schema),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
     }),
