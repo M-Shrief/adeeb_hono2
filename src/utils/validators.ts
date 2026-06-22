@@ -39,12 +39,26 @@ export const param_validator = (schema: any, message?: string) =>
       return c.json(
         {
           message: message ?? 'param validation error',
-          errors: result.error
+          errors: format_errors(result.error)
         },
         HttpStatusCode.UNPROCESSABLE_ENTITY,
       );
     }
   });
+
+export const query_validator = (schema: any, message?: string) =>
+  vValidator("query", schema, (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          message: message ?? 'query validation error',
+          errors: format_errors(result.error)
+        },
+        HttpStatusCode.UNPROCESSABLE_ENTITY,
+      );
+    }
+  });
+
 
 export const id_param_validator = () =>
   param_validator(object({ id: uuid_schema }), 'Not Found');
