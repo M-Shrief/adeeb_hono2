@@ -57,6 +57,44 @@ poem_route.get(
     }
 )
 
+poem_route.get(
+    "/poems/:id",
+    describeRoute({
+        tags: ["Poem"],
+        summary: "Get One",
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get Poem", poem_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "Poem's not Found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    id_param_validator(),
+    async(c) => {
+        try {
+            let id = c.req.param("id")
+            let { created_at, updated_at, ...rest} = getTableColumns(poem_table) // select all columns, except created_at & updated_at.
+            let poem = await db.query.poem_table.findFirst({
+                columns: {
+                    id: true,
+                    intro: true,
+                    verses: true,
+                    is_couplet: true,
+                    reviewed: true,
+                },
+                where: (poem_table, { eq }) => eq(poem_table.id, id),
+            })
+            if (!poem) {
+                return c.json({message: "Poem's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+
+            return c.json(poem, HttpStatusCode.OK)
+        } catch(e) {
+            logger.error({error:e}, "Error getting all Adeebs")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
+
 poem_route.post(
     "/poems",
     describeRoute({
