@@ -61,4 +61,4 @@ export const query_validator = (schema: any, message?: string) =>
 
 
 export const id_param_validator = () =>
-  param_validator(object({ id: uuid_schema }), 'Not Found');
+  param_validator(object({ id: uuid_schema }), 'Invalid id');

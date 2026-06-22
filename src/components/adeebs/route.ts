@@ -8,7 +8,7 @@ import { db } from "../../database/index.js"
 import { adeeb_table } from "../../database/schemas.js"
 import { adeeb_schema, create_many_req, create_many_res, create_one_req, create_one_res } from './schema.js'
 ///// Utils
-import { json_validator, query_validator } from '../../utils/validators.js'
+import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
 import { logger } from '../../utils/logger.js';
 
@@ -46,6 +46,38 @@ adeeb_route.get(
             },
             HttpStatusCode.OK
         )
+    }
+)
+
+adeeb_route.get(
+    "/adeebs/:id",
+    describeRoute({
+        tags: ["Adeeb"],
+        summary: "Get One",
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get Adeeb", adeeb_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "Adeeb's not Found", base_response_schema),
+        },
+    }),
+    id_param_validator(),
+    async function get_all(c) {
+        let id = c.req.param("id")
+        let { created_at, updated_at, ...rest} = getTableColumns(adeeb_table) // select all columns, except created_at & updated_at.
+        let adeeb = await db.query.adeeb_table.findFirst({
+            columns: {
+                id: true,
+                name: true,
+                bio: true,
+                time_period: true,
+                reviewed: true,
+            },
+            where: (adeeb_table, { eq }) => eq(adeeb_table.id, id),
+        })
+        if (!adeeb) {
+            return c.json({message: "Adeeb's not Found"}, HttpStatusCode.NOT_FOUND)
+        }
+
+        return c.json(adeeb, HttpStatusCode.OK)
     }
 )
 
