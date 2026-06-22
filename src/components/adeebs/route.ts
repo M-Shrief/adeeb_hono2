@@ -22,32 +22,39 @@ adeeb_route.get(
         summary: "Get All",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Get All Adeebs", get_all_schema(adeeb_schema)),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
     }),
     query_validator(queries_schema_for_get_all_req),
-    async function get_all(c) {
-        let limit = Number(c.req.query('limit')) || 100
-        let offset = Number(c.req.query('offset')) || 0
-        // We make 2 seperate queries, to get the data & the total_count of rows.
-        // we can make 1 query, but we'll need to make manual transformation
-        // so that we remove the count field from every item in the array.
-        let { created_at, updated_at, ...rest} = getTableColumns(adeeb_table) // select all columns, except created_at & updated_at.
-        let [adeebs, counts] = await Promise.all([
-            await db.select({...rest}).from(adeeb_table).limit(limit).offset(offset),
-            await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(adeeb_table)
-        ])
-        
-        let total_count = counts[0] ? counts[0].total_count : 0 
+    async(c) => {
+        try {
+            let limit = Number(c.req.query('limit')) || 100
+            let offset = Number(c.req.query('offset')) || 0
+            // We make 2 seperate queries, to get the data & the total_count of rows.
+            // we can make 1 query, but we'll need to make manual transformation
+            // so that we remove the count field from every item in the array.
+            let { created_at, updated_at, ...rest} = getTableColumns(adeeb_table) // select all columns, except created_at & updated_at.
+            let [adeebs, counts] = await Promise.all([
+                await db.select({...rest}).from(adeeb_table).limit(limit).offset(offset),
+                await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(adeeb_table)
+            ])
+            
+            let total_count = counts[0] ? counts[0].total_count : 0 
 
-        return c.json(
-            {
-                data: adeebs,
-                limit, 
-                offset, 
-                total_count: total_count
-            },
-            HttpStatusCode.OK
-        )
+            return c.json(
+                {
+                    data: adeebs,
+                    limit, 
+                    offset, 
+                    total_count: total_count
+                },
+                HttpStatusCode.OK
+            )
+        } catch(e) {
+            logger.error({error:e}, "Error getting all Adeebs")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+
     }
 )
 
@@ -59,27 +66,34 @@ adeeb_route.get(
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Get Adeeb", adeeb_schema),
            ...get_described_route(HttpStatusCode.NOT_FOUND, "Adeeb's not Found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
     }),
     id_param_validator(),
-    async function get_all(c) {
-        let id = c.req.param("id")
-        let { created_at, updated_at, ...rest} = getTableColumns(adeeb_table) // select all columns, except created_at & updated_at.
-        let adeeb = await db.query.adeeb_table.findFirst({
-            columns: {
-                id: true,
-                name: true,
-                bio: true,
-                time_period: true,
-                reviewed: true,
-            },
-            where: (adeeb_table, { eq }) => eq(adeeb_table.id, id),
-        })
-        if (!adeeb) {
-            return c.json({message: "Adeeb's not Found"}, HttpStatusCode.NOT_FOUND)
-        }
+    async(c) => {
+        try {
+            let id = c.req.param("id")
+            let { created_at, updated_at, ...rest} = getTableColumns(adeeb_table) // select all columns, except created_at & updated_at.
+            let adeeb = await db.query.adeeb_table.findFirst({
+                columns: {
+                    id: true,
+                    name: true,
+                    bio: true,
+                    time_period: true,
+                    reviewed: true,
+                },
+                where: (adeeb_table, { eq }) => eq(adeeb_table.id, id),
+            })
+            if (!adeeb) {
+                return c.json({message: "Adeeb's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
 
-        return c.json(adeeb, HttpStatusCode.OK)
+            return c.json(adeeb, HttpStatusCode.OK)
+
+        } catch(e) {
+            logger.error({error:e}, "Error getting Adeeb by ID")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
     }
 )
 
@@ -95,7 +109,7 @@ adeeb_route.post(
         },
     }),
     json_validator(create_one_req, "Invalid data for Adeeb"),
-    async function create_one_adeeb(c) {
+    async(c) => {
         try {
             let new_data = await c.req.json()
             let new_adeeb = await db
@@ -126,7 +140,7 @@ adeeb_route.post(
         },
     }),
     json_validator(create_many_req, "Invalid data, can't be used to create many Adeebs"),
-    async function create_many_adeeb(c) {
+    async (c) => {
         try {
             let new_data = await c.req.json()
             let new_adeebs = await db
@@ -155,7 +169,7 @@ adeeb_route.put(
     }),
     id_param_validator(),
     json_validator(update_req, "Invalid data for update"),
-    async function get_all(c) {
+    async(c) => {
         try {
             let id = c.req.param("id")
             let data = await c.req.json()
@@ -180,7 +194,7 @@ adeeb_route.delete(
         },
     }),
     id_param_validator(),
-    async function get_all(c) {
+    async (c) => {
         try {
             let id = c.req.param("id")
             
