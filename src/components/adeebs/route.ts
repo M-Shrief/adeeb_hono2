@@ -16,7 +16,7 @@ export const adeeb_route = new Hono()
 
 
 adeeb_route.get(
-    "/",
+    "/adeebs",
     describeRoute({
         tags: ["Adeeb"],
         summary: "Get All",
@@ -50,7 +50,7 @@ adeeb_route.get(
 )
 
 adeeb_route.post(
-    "/",
+    "/adeebs",
     describeRoute({
         tags: ["Adeeb"],
         summary: "Create One",
@@ -82,7 +82,7 @@ adeeb_route.post(
 )
 
 adeeb_route.post(
-    "/many",
+    "/adeebs/many",
     describeRoute({
         tags: ["Adeeb"],
         summary: "Create Many",

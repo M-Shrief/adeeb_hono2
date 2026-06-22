@@ -135,7 +135,7 @@ app.get(
   })
 )
 
-app.route("/api/adeebs", adeeb_route)
+app.route("/api/v1", adeeb_route)
 
 
 export { app }
