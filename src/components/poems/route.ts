@@ -6,7 +6,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { poem_table } from "../../database/schemas.js"
-import { poem_schema, create_many_req, create_many_res, create_one_req, create_one_res } from './schema.js'
+import { poem_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
@@ -151,6 +151,32 @@ poem_route.post(
         } catch(e) {
             logger.error({error:e}, "Error: creating multiple Poems")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
+
+poem_route.put(
+    "/poems/:id",
+    describeRoute({
+        tags: ["Poem"],
+        summary: "Update One",
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Updated Successfully"),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request, try again later.", base_response_schema),
+        },
+    }),
+    id_param_validator(),
+    json_validator(update_req, "Invalid data for update"),
+    async(c) => {
+        try {
+            let id = c.req.param("id")
+            let data = await c.req.json()
+            
+            await db.update(poem_table).set({...data, updated_at: sql`NOW()`}).where(eq(poem_table.id, id))
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+        } catch(e) {
+            logger.error({error: e}, "Error Updating Poem")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }
 )
