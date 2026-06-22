@@ -160,7 +160,7 @@ adeeb_route.put(
             let id = c.req.param("id")
             let data = await c.req.json()
             
-            await db.update(adeeb_table).set({...data}).where(eq(adeeb_table.id, id))
+            await db.update(adeeb_table).set({...data, updated_at: sql`NOW()`}).where(eq(adeeb_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
             logger.error({error: e}, "Error Updating Adeeb")
