@@ -180,3 +180,27 @@ poem_route.put(
         }
     }
 )
+
+poem_route.delete(
+    "/poems/:id",
+    describeRoute({
+        tags: ["Poem"],
+        summary: "Delete One",
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Successfully"),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request, try again later.", base_response_schema),
+        },
+    }),
+    id_param_validator(),
+    async(c) => {
+        try {
+            let id = c.req.param("id")
+            
+            await db.delete(poem_table).where(eq(poem_table.id, id))
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+        } catch(e) {
+            logger.error({error: e}, "Error Deleting Poem")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
