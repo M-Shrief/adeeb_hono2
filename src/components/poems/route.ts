@@ -80,6 +80,8 @@ poem_route.get(
                     verses: true,
                     is_couplet: true,
                     reviewed: true,
+
+                    adeeb_id: true,
                 },
                 where: (poem_table, { eq }) => eq(poem_table.id, id),
             })
