@@ -14,6 +14,7 @@ import { logger } from '../../utils/logger.js';
 
 export const prose_qoute_route = new Hono()  
 
+
 prose_qoute_route.get(
     "/prose_qoutes",
     describeRoute({
@@ -57,6 +58,44 @@ prose_qoute_route.get(
     }
 )
 
+prose_qoute_route.get(
+    "/prose_qoutes/:id",
+    describeRoute({
+        tags: ["ProseQoutes"],
+        summary: "Get One",
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get ProseQoute", one_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "ProseQoute's not Found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    id_param_validator(),
+    async(c) => {
+        try {
+            let id = c.req.param("id")
+            let prose_qoute = await db.query.prose_qoutes_table.findFirst({
+                columns: {
+                    id: true,
+                    qoute: true,
+                    source: true,
+                    tags: true,
+                    adeeb_id: true,
+                    reviewed: true,
+                },
+                where: (prose_qoutes_table, { eq }) => eq(prose_qoutes_table.id, id),
+            })
+            if (!prose_qoute) {
+                return c.json({message: "ProseQoute's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+
+            return c.json(prose_qoute, HttpStatusCode.OK)
+
+        } catch(e) {
+            logger.error({error:e}, "Error getting ProseQoute by ID")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
 
 prose_qoute_route.post(
     "/prose_qoutes",
