@@ -6,7 +6,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { chosen_verses_table } from "../../database/schemas.js"
-import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res } from './schema.js'
+import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res} from './schema.js'
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
@@ -55,6 +55,47 @@ chosen_verses_route.get(
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
 
+    }
+)
+
+chosen_verses_route.get(
+    "/chosen_verses/:id",
+    describeRoute({
+        tags: ["ChosenVerses"],
+        summary: "Get One",
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get ChosenVerse", one_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "ChosenVerse's not Found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    id_param_validator(),
+    async(c) => {
+        try {
+            let id = c.req.param("id")
+            let { created_at, updated_at, ...rest} = getTableColumns(chosen_verses_table) // select all columns, except created_at & updated_at.
+            let chosen_verse = await db.query.chosen_verses_table.findFirst({
+                columns: {
+                    id: true,
+                    adeeb_id: true,
+                    poem_id: true,
+                    tags: true,
+                    verses: true,
+                    is_couplet: true,
+                    reviewed: true,
+                },
+                where: (chosen_verses_table, { eq }) => eq(chosen_verses_table.id, id),
+            })
+            if (!chosen_verse) {
+                return c.json({message: "ChosenVerse's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+
+            return c.json(chosen_verse, HttpStatusCode.OK)
+
+        } catch(e) {
+            logger.error({error:e}, "Error getting ChosenVerse by ID")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
     }
 )
 

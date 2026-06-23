@@ -52,4 +52,3 @@ export const create_many_res = object({
   success_count: number(),
   failed_count: number(),
 })
-
