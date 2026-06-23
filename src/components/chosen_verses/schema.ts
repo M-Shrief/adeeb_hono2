@@ -52,3 +52,13 @@ export const create_many_res = object({
   success_count: number(),
   failed_count: number(),
 })
+
+export const update_req = object({
+  tags: optional(tags_schema),
+  verses: optional(verses_schema),
+  is_couplet: optional(is_couplet_schema),
+  reviewed: optional(reviewed_schema),
+
+  adeeb_id: optional(uuid_schema),
+  poem_id: optional(uuid_schema),
+});
