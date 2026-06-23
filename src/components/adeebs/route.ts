@@ -117,8 +117,11 @@ adeeb_route.post(
                 .values(new_data)
                 .onConflictDoNothing({ target: [adeeb_table.name]})
                 .returning()
+                .then(res => res[0])
             
-            if (new_adeeb.length === 0) {
+            // if the first item in res[0] is undefined,
+            // then there was a conflict and it already exists
+            if (!new_adeeb) {
                 return c.json({ message: "Adeeb already exists"}, HttpStatusCode.NOT_ACCEPTABLE) 
             }
             return c.json(new_adeeb, HttpStatusCode.CREATED)
