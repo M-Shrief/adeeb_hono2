@@ -185,3 +185,27 @@ prose_qoute_route.put(
         }
     }
 )
+
+prose_qoute_route.delete(
+    "/prose_qoutes/:id",
+    describeRoute({
+        tags: ["ProseQoutes"],
+        summary: "Delete One",
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Successfully"),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request, try again later.", base_response_schema),
+        },
+    }),
+    id_param_validator(),
+    async (c) => {
+        try {
+            let id = c.req.param("id")
+            
+            await db.delete(prose_qoutes_table).where(eq(prose_qoutes_table.id, id))
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+        } catch(e) {
+            logger.error({error: e}, "Error Deleting ProseQoute")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
