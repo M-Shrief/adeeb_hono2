@@ -22,6 +22,8 @@ export const verses_schema = array(pipe(string(), trim(), minLength(4), maxLengt
 
 export const is_couplet_schema = fallback(boolean(), true) 
 
+export const tags_schema = array(pipe(string(), trim(), minLength(3), maxLength(64)))
+
 const date_schema = date()
 
 export const created_at = date_schema

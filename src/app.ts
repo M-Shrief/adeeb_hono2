@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import {
-  resolver,
   describeRoute,
   openAPIRouteHandler
 } from "hono-openapi";
@@ -19,6 +18,7 @@ import { HttpStatusCode, base_response_schema, get_described_route } from "./uti
 // Components
 import { adeeb_route } from "./components/adeebs/route.js";
 import { poem_route } from "./components/poems/route.js";
+import { chosen_verses_route } from "./components/chosen_verses/route.js";
 
 const app = new Hono();
 
@@ -138,6 +138,7 @@ app.get(
 
 app.route("/api/v1", adeeb_route)
 app.route("/api/v1", poem_route)
+app.route("/api/v1", chosen_verses_route)
 
 
 export { app }
