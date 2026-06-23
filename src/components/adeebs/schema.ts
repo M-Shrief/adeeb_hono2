@@ -23,7 +23,7 @@ const time_period_schema = enum_schema(TimePeriodEnum);
 const bio_schema = pipe(string(), trim(), minLength(4), maxLength(1024));
 
 
-export const adeeb_schema = object({
+export const one_schema = object({
   id: uuid_schema,
   name: name_schema,
   time_period: time_period_schema,

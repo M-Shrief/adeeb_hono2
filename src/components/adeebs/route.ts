@@ -6,7 +6,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { adeeb_table } from "../../database/schemas.js"
-import { adeeb_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
+import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
@@ -18,10 +18,10 @@ export const adeeb_route = new Hono()
 adeeb_route.get(
     "/adeebs",
     describeRoute({
-        tags: ["Adeeb"],
+        tags: ["Adeebs"],
         summary: "Get All",
         responses: {
-           ...get_described_route(HttpStatusCode.OK, "Get All Adeebs", get_all_schema(adeeb_schema)),
+           ...get_described_route(HttpStatusCode.OK, "Get All Adeebs", get_all_schema(one_schema)),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
     }),
@@ -61,10 +61,10 @@ adeeb_route.get(
 adeeb_route.get(
     "/adeebs/:id",
     describeRoute({
-        tags: ["Adeeb"],
+        tags: ["Adeebs"],
         summary: "Get One",
         responses: {
-           ...get_described_route(HttpStatusCode.OK, "Get Adeeb", adeeb_schema),
+           ...get_described_route(HttpStatusCode.OK, "Get Adeeb", one_schema),
            ...get_described_route(HttpStatusCode.NOT_FOUND, "Adeeb's not Found", base_response_schema),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
@@ -100,7 +100,7 @@ adeeb_route.get(
 adeeb_route.post(
     "/adeebs",
     describeRoute({
-        tags: ["Adeeb"],
+        tags: ["Adeebs"],
         summary: "Create One",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful added Adeeb", create_one_res),
@@ -132,7 +132,7 @@ adeeb_route.post(
 adeeb_route.post(
     "/adeebs/many",
     describeRoute({
-        tags: ["Adeeb"],
+        tags: ["Adeebs"],
         summary: "Create Many",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful response", create_many_res),
@@ -160,7 +160,7 @@ adeeb_route.post(
 adeeb_route.put(
     "/adeebs/:id",
     describeRoute({
-        tags: ["Adeeb"],
+        tags: ["Adeebs"],
         summary: "Update One",
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Updated Successfully"),
@@ -186,7 +186,7 @@ adeeb_route.put(
 adeeb_route.delete(
     "/adeebs/:id",
     describeRoute({
-        tags: ["Adeeb"],
+        tags: ["Adeebs"],
         summary: "Delete One",
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Successfully"),

@@ -6,7 +6,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { poem_table } from "../../database/schemas.js"
-import { poem_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
+import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
@@ -18,10 +18,10 @@ export const poem_route = new Hono()
 poem_route.get(
     "/poems",
     describeRoute({
-        tags: ["Poem"],
+        tags: ["Poems"],
         summary: "Get All",
         responses: {
-           ...get_described_route(HttpStatusCode.OK, "Get All Poems", get_all_schema(poem_schema)),
+           ...get_described_route(HttpStatusCode.OK, "Get All Poems", get_all_schema(one_schema)),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
     }),
@@ -60,10 +60,10 @@ poem_route.get(
 poem_route.get(
     "/poems/:id",
     describeRoute({
-        tags: ["Poem"],
+        tags: ["Poems"],
         summary: "Get One",
         responses: {
-           ...get_described_route(HttpStatusCode.OK, "Get Poem", poem_schema),
+           ...get_described_route(HttpStatusCode.OK, "Get Poem", one_schema),
            ...get_described_route(HttpStatusCode.NOT_FOUND, "Poem's not Found", base_response_schema),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
@@ -98,7 +98,7 @@ poem_route.get(
 poem_route.post(
     "/poems",
     describeRoute({
-        tags: ["Poem"],
+        tags: ["Poems"],
         summary: "Create One",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful added Poem", create_one_res),
@@ -130,7 +130,7 @@ poem_route.post(
 poem_route.post(
     "/poems/many",
     describeRoute({
-        tags: ["Poem"],
+        tags: ["Poems"],
         summary: "Create Many",
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful response", create_many_res),
@@ -158,7 +158,7 @@ poem_route.post(
 poem_route.put(
     "/poems/:id",
     describeRoute({
-        tags: ["Poem"],
+        tags: ["Poems"],
         summary: "Update One",
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Updated Successfully"),
@@ -184,7 +184,7 @@ poem_route.put(
 poem_route.delete(
     "/poems/:id",
     describeRoute({
-        tags: ["Poem"],
+        tags: ["Poems"],
         summary: "Delete One",
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Successfully"),
