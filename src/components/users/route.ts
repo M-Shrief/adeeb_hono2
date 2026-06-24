@@ -6,7 +6,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { RoleEnum, user_table } from "../../database/schemas.js"
-import { one_schema, signup_req, login_req, user_authorized_res, update_req } from './schema.js'
+import { one_schema, signup_req, login_req, user_authorized_res, update_current_req, update_one_req } from './schema.js'
 ///// Utils
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
@@ -264,7 +264,54 @@ users_route.post(
     }
 )
 
-// PUT /users/me
+users_route.put(
+    "/users/me",
+    describeRoute({
+        tags: ["Users"],
+        summary: "Update Current User",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Update Current User", one_schema),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "User's not found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    json_validator(update_current_req, "Invalid data for updating User"),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.NORMAL, PERMISSIONS.WRITE),
+        ]
+        
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+        if (!is_authorized) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let user = payload["user"] as any
+        let id = user.id
+
+        // set() ignores fields with undefined value, so we don't need conditions
+        let new_data = await c.req.json()
+        let hashed_pass = undefined
+        if (new_data.password) {
+            hashed_pass = await hash_password(new_data.password)
+        }
+        await db.update(user_table).set({username: new_data.username, password: hashed_pass, updated_at: sql`NOW()`}).where(eq(user_table.id, id))
+
+        return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+    }    
+)
+
+
 // PUT /users/:id
 
 // DELETE /users/me

@@ -42,3 +42,14 @@ export const user_authorized_res = object({
   user: one_schema,
   access_token: string(),  
 });
+
+export const update_current_req = object({
+  username: optional(username_schema),
+  password: optional(password_schema),
+});
+
+export const update_one_req = object({
+  username: optional(username_schema),
+  password: optional(password_schema),
+  roles: optional(roles_schema),
+});

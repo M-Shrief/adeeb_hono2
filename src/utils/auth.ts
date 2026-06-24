@@ -25,7 +25,7 @@ export const PERMISSIONS = {
 type PERMISSION = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
 
-type RoleEnumType = typeof RoleEnum[keyof typeof RoleEnum];
+export type RoleEnumType = typeof RoleEnum[keyof typeof RoleEnum];
 
 export function create_permission(role: RoleEnumType, op: PERMISSION = PERMISSIONS.READ): string {
     return role + ":" + op
@@ -108,3 +108,14 @@ export const check_permission = (authorized_list: string[], permissions: string[
     return is_authorized
 } 
 
+
+// Example of middlware, to be modified to ask for permissions
+// in write operations for routes in other components
+
+// export const isAuthorized = (permission: string) =>
+//   createMiddleware(async (c, next) => {
+//     const permissions = c.get('jwtPayload').permissions as string[];
+//     if (!permissions || permissions.includes(permission) == false)
+//       return c.json('Not Authorized', HttpStatusCode.UNAUTHORIZED);
+//     await next();
+//   });
