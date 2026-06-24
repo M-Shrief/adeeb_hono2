@@ -56,10 +56,10 @@ export const sign_token = async (id: string, username: string, roles: RoleEnumTy
 
     return await sign(
         {
-        ...user,
-        permissions,
-        exp: Math.floor(Date.now() / 1000) + 60 * 60 * exp_after_hours, // default is 2 Hours.
-        iat: Math.floor(Date.now() / 1000),
+            user,
+            permissions,
+            exp: Math.floor(Date.now() / 1000) + 60 * 60 * exp_after_hours, // default is 2 Hours.
+            iat: Math.floor(Date.now() / 1000),
         },
         JWT_PRIVATE_KEY,
         'RS256',
