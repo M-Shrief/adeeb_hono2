@@ -19,43 +19,70 @@ const format_errors = (errors: readonly any[]) => {
   return errors.map((e: any) => { return {message: e.message, path: e.path} })
 }
 
-export const json_validator = (schema: any, message?: string) => {
-    return vValidator('json', schema, (result, c) => {
-        if(!result.success) { 
-            return c.json(
-                {
-                    message: message ?? "Invalid data",
-                    errors: format_errors(result.error)
-                },
-                HttpStatusCode.UNPROCESSABLE_ENTITY,
-            )
-        }        
-    })
+export const json_validator = (schema: any, message?: string, show_errors: boolean = true) => {
+  return vValidator('json', schema, (result, c) => {
+    if(!result.success) { 
+      if(show_errors) {
+        return c.json(
+          {
+            message: message ?? "Invalid data",
+            errors: format_errors(result.error)
+          },
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+        )
+      } else {
+        return c.json(
+          {
+            message: message ?? "Invalid data",
+          },
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+        )
+      }
+    }        
+  })
 }
 
-export const param_validator = (schema: any, message?: string) =>
+export const param_validator = (schema: any, message?: string, show_errors: boolean = true) =>
   vValidator('param', schema, (result, c) => {
     if (!result.success) {
-      return c.json(
-        {
-          message: message ?? 'param validation error',
-          errors: format_errors(result.error)
-        },
-        HttpStatusCode.UNPROCESSABLE_ENTITY,
-      );
+      if(show_errors) {
+        return c.json(
+          {
+            message: message ?? 'param validation error',
+            errors: format_errors(result.error)
+          },
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+        );
+      } else {
+        return c.json(
+          {
+            message: message ?? 'param validation error',
+          },
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+        );
+      }
     }
   });
 
-export const query_validator = (schema: any, message?: string) =>
+export const query_validator = (schema: any, message?: string, show_errors: boolean = true) =>
   vValidator("query", schema, (result, c) => {
     if (!result.success) {
-      return c.json(
-        {
-          message: message ?? 'query validation error',
-          errors: format_errors(result.error)
-        },
-        HttpStatusCode.UNPROCESSABLE_ENTITY,
-      );
+      if (show_errors) {
+        return c.json(
+          {
+            message: message ?? 'query validation error',
+            errors: format_errors(result.error)
+          },
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+        );
+      } else {
+        return c.json(
+          {
+            message: message ?? 'query validation error',
+          },
+          HttpStatusCode.UNPROCESSABLE_ENTITY,
+        );
+      }
     }
   });
 
