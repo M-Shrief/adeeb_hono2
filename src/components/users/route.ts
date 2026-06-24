@@ -370,5 +370,44 @@ users_route.put(
 )
 
 
-// DELETE /users/me
+users_route.delete(
+    "/users/me",
+    describeRoute({
+        tags: ["Users"],
+        summary: "Delete Current User",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Delete Current User", one_schema),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "User's not found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.NORMAL, PERMISSIONS.WRITE),
+        ]
+        
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+        if (!is_authorized) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let user = payload["user"] as any
+        let id = user.id
+
+        await db.delete(user_table).where(eq(user_table.id, id))
+
+        return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+    }    
+)
+
 // DELETE /users/:id
