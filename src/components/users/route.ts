@@ -9,7 +9,7 @@ import { RoleEnum, user_table } from "../../database/schemas.js"
 import { one_schema, signup_req, login_req, user_authorized_res, update_req } from './schema.js'
 ///// Utils
 import { logger } from '../../utils/logger.js';
-import { auth_header_validator, json_validator, query_validator } from '../../utils/validators.js'
+import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema, describe_jwt_security } from '../../utils/api.js';
 import { compare_password, hash_password, sign_token, verify_token, create_permission, PERMISSIONS, check_permission } from "../../utils/auth.js"
 
@@ -125,7 +125,58 @@ users_route.get(
         return c.json(existing_user, HttpStatusCode.OK)
     }    
 )
-// GET /users/:id
+
+users_route.get(
+    "/users/:id",
+    describeRoute({
+        tags: ["Users"],
+        summary: "Get One",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get Current User", one_schema),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "User's not found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    id_param_validator(),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+        ]
+        
+        let is_adminstrator = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_adminstrator) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let id = c.req.param("id")
+        let existing_user = await db.query.user_table.findFirst({
+            columns: {
+                id: true,
+                username: true,
+                roles: true,
+            },
+            where: (user_table, { eq }) => eq(user_table.id, id),
+        })
+
+        if (!existing_user) {
+            return c.json({message: "User's not Found"}, HttpStatusCode.NOT_FOUND)
+        }
+
+        return c.json(existing_user, HttpStatusCode.OK)
+    }    
+)
 
 users_route.post(
     "/users/signup",
