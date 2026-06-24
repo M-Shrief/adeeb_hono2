@@ -75,7 +75,56 @@ users_route.get(
     }
 )
 
+users_route.get(
+    "/users/me",
+    describeRoute({
+        tags: ["Users"],
+        summary: "Get Current User",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get Current User", one_schema),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "User's not found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
 
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.NORMAL, PERMISSIONS.READ),
+        ]
+        
+        let is_adminstrator = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_adminstrator) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let user = payload["user"] as any
+        let id = user.id
+
+        let existing_user = await db.query.user_table.findFirst({
+            columns: {
+                id: true,
+                username: true,
+                roles: true,
+            },
+            where: (user_table, { eq }) => eq(user_table.id, id),
+        })
+
+        if (!existing_user) {
+            return c.json({message: "User's not Found"}, HttpStatusCode.NOT_FOUND)
+        }
+
+        return c.json(existing_user, HttpStatusCode.OK)
+    }    
+)
 // GET /users/:id
 
 users_route.post(
