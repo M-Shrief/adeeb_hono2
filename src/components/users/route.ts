@@ -11,7 +11,7 @@ import { one_schema, signup_req, login_req, user_authorized_res, update_req } fr
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema, describe_jwt_security } from '../../utils/api.js';
-import { compare_password, hash_password, sign_token, verify_token, create_permission, PERMISSIONS, check_permission } from "../../utils/auth.js"
+import { compare_password, hash_password, sign_token, verify_token, create_permission, PERMISSIONS, check_permission, RoleEnumType } from "../../utils/auth.js"
 
 export const users_route = new Hono() 
 
@@ -194,9 +194,14 @@ users_route.post(
         try {
             let new_data = await c.req.json()
             let hashed_pass = await hash_password(new_data.password)
+
+            // Ensuring integrity, by removing duplocates and having Normal role as a must.
+            let roles = new Set<RoleEnumType>(new_data.roles as RoleEnumType[])
+            roles.add(RoleEnum.NORMAL)
+
             let new_user = await db
                 .insert(user_table)
-                .values({username: new_data.username, password: hashed_pass, roles: new_data.roles})
+                .values({username: new_data.username, password: hashed_pass, roles: [...roles]})
                 .onConflictDoNothing({ target: [user_table.username] })
                 .returning()
                 .then(res => res[0])
