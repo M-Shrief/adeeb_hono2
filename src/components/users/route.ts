@@ -47,8 +47,8 @@ users_route.get(
             create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
         ]
         
-        let is_adminstrator = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_adminstrator) {
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_authorized) {
             return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
         }
         
@@ -101,8 +101,8 @@ users_route.get(
             create_permission(RoleEnum.NORMAL, PERMISSIONS.READ),
         ]
         
-        let is_adminstrator = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_adminstrator) {
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_authorized) {
             return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
         }
         
@@ -155,8 +155,8 @@ users_route.get(
             create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
         ]
         
-        let is_adminstrator = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_adminstrator) {
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_authorized) {
             return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
         }
         
