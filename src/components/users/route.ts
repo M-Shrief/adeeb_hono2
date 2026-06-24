@@ -10,7 +10,7 @@ import { one_schema, signup_req, login_req, user_authorized_res, update_req } fr
 ///// Utils
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, json_validator, query_validator } from '../../utils/validators.js'
-import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
+import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema, describe_jwt_security } from '../../utils/api.js';
 import { compare_password, hash_password, sign_token, verify_token, create_permission, PERMISSIONS, check_permission } from "../../utils/auth.js"
 
 export const users_route = new Hono() 
@@ -23,6 +23,7 @@ users_route.get(
     describeRoute({
         tags: ["Users"],
         summary: "Get All",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Get All Users", get_all_schema(one_schema)),
            ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
@@ -74,7 +75,7 @@ users_route.get(
     }
 )
 
-// GET /users/me
+
 // GET /users/:id
 
 users_route.post(

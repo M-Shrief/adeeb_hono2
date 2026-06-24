@@ -57,6 +57,28 @@ export function get_described_route(http_status: number, description: string, sc
   return result
 }
 
+
+/**
+ * Used to shorten boilerplate needed to describe route's security for OpenAPI.
+ * 
+ * It's used like:
+ *     describeRoute({
+ *         ...
+ *         ...describe_jwt_security,
+ *         ... 
+ *     }),
+ */
+export const describe_jwt_security = {
+  security: [
+    {
+        in: ["header"],
+        name: ["Authorization"],
+        scheme: ["bearer"],
+        bearerFormat: ["JWT"],
+    },
+  ],  
+}
+
 /**
  * Queries' schema which is used to get all items for a route
  */
