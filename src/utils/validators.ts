@@ -6,7 +6,7 @@ import {  object } from 'valibot';
 ///
 import { HttpStatusCode } from "./api.js"
 import { uuid_schema } from "./schemas.js"
-
+import { auth_header_schema } from "./auth.js";
 
 
 /**
@@ -62,3 +62,35 @@ export const query_validator = (schema: any, message?: string) =>
 
 export const id_param_validator = () =>
   param_validator(object({ id: uuid_schema }), 'Invalid id');
+
+/**
+ * 
+ * @param schema header name must be lowercase
+ * @param message 
+ * @returns 
+ */
+export function header_validator(schema: any, message?: string, show_errors: boolean = true) {
+  return vValidator("header", schema, (result, c) => {
+    if (!result.success) {
+      if (show_errors) {
+        return c.json(
+          {
+            message: message ?? 'query validation error',
+            errors: format_errors(result.error)
+          },
+          HttpStatusCode.UNAUTHORIZED,
+        );
+      } else {
+        return c.json(
+          {
+            message: message ?? 'query validation error',
+          },
+          HttpStatusCode.UNAUTHORIZED,
+        );
+      }
+    }
+  });
+}
+
+export const auth_header_validator = () =>
+  header_validator(auth_header_schema, "Not Authorized", false)

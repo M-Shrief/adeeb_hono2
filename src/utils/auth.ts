@@ -1,10 +1,13 @@
 import { decode, sign, verify } from 'hono/jwt'
 import { JWTPayload } from 'hono/utils/jwt/types';
 import bcrypt from "bcrypt"
+import { object, string } from 'valibot';
 // import { createMiddleware } from 'hono/factory';
 ////
 import { JWT_PRIVATE_KEY, JWT_PUBLIC_KEY } from '../config.js'
 import { RoleEnum } from '../database/schemas.js';
+
+export const auth_header_schema = object({ authorization: string()})
 
 export const hash_password = async (password: string) => {
   const salt = bcrypt.genSaltSync(); // default 10
@@ -15,7 +18,7 @@ export const compare_password = async (password: string, pass_hash: string) =>
   await bcrypt.compare(password, pass_hash);
 
 
-const PERMISSIONS = {
+export const PERMISSIONS = {
     WRITE: "write",
     READ: "read"
 } as const
