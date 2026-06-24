@@ -20,6 +20,7 @@ import { adeeb_route } from "./components/adeebs/route.js";
 import { poem_route } from "./components/poems/route.js";
 import { chosen_verses_route } from "./components/chosen_verses/route.js";
 import { prose_qoute_route } from "./components/prose_qoutes/route.js";
+import { users_route } from "./components/users/route.js";
 
 const app = new Hono();
 
@@ -141,6 +142,8 @@ app.route("/api/v1", adeeb_route)
 app.route("/api/v1", poem_route)
 app.route("/api/v1", chosen_verses_route)
 app.route("/api/v1", prose_qoute_route)
+app.route("/api/v1", users_route)
+
 
 
 export { app }
