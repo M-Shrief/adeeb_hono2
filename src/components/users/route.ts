@@ -5,20 +5,75 @@ import {
 import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
-import { user_table } from "../../database/schemas.js"
-import { signup_req, login_req, user_authorized_res} from './schema.js'
+import { RoleEnum, user_table } from "../../database/schemas.js"
+import { one_schema, signup_req, login_req, user_authorized_res, update_req } from './schema.js'
 ///// Utils
 import { logger } from '../../utils/logger.js';
-import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
+import { auth_header_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
-import { compare_password, hash_password, sign_token } from "../../utils/auth.js"
+import { compare_password, hash_password, sign_token, verify_token, create_permission, PERMISSIONS, check_permission } from "../../utils/auth.js"
 
 export const users_route = new Hono() 
 
 
 
 
-// GET /users
+users_route.get(
+    "/users",
+    describeRoute({
+        tags: ["Users"],
+        summary: "Get All",
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get All Users", get_all_schema(one_schema)),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    query_validator(queries_schema_for_get_all_req),
+    auth_header_validator(),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+        ]
+        
+        let is_adminstrator = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_adminstrator) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let limit = Number(c.req.query('limit')) || 100
+        let offset = Number(c.req.query('offset')) || 0
+
+        let { id, username, roles} = getTableColumns(user_table) // select all columns, except created_at & updated_at.
+        let [users, counts] = await Promise.all([
+            await db.select({ id, username, roles }).from(user_table).limit(limit).offset(offset),
+            await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(user_table)
+        ])
+        
+        let total_count = counts[0] ? counts[0].total_count : 0 
+
+        return c.json(
+            {
+                data: users,
+                limit, 
+                offset, 
+                total_count: total_count
+            },
+            HttpStatusCode.OK
+        )        
+    }
+)
+
 // GET /users/me
 // GET /users/:id
 
