@@ -77,7 +77,7 @@ export const user_table = pgTable('users', {
     ...id,
     username: varchar({ length: 256 }).unique().notNull(),
     password: varchar({ length: 256 }).notNull(),
-    roles: roles_enum().default(RoleEnum.NORMAL).notNull(),
+    roles: roles_enum().array().default([RoleEnum.NORMAL]).notNull(),
     ...timestamps
 })
 
