@@ -77,3 +77,31 @@ export const verify_token = async (auth_header: string): Promise<JWTPayload | nu
 }
 
 
+export const check_permission = (authorized_list: string[], permissions: string[], op: PERMISSION = PERMISSIONS.READ) => {
+    let is_authorized = false
+    let is_banned = false
+
+    for (let perm of permissions) {
+        if (op == PERMISSIONS.WRITE && perm == create_permission(RoleEnum.BANNED, PERMISSIONS.WRITE)) {
+            is_banned = true
+            break
+        }
+        else if (op == PERMISSIONS.READ && perm == create_permission(RoleEnum.BANNED, PERMISSIONS.READ)) {
+            is_banned = true
+            break
+        }
+        else {
+            let index = authorized_list.indexOf(perm)
+            if (index != -1) {
+                is_authorized = true
+            }
+        }
+    }
+
+    if (is_banned) {
+        is_authorized = false
+    }
+
+    return is_authorized
+} 
+
