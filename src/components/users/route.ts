@@ -312,7 +312,63 @@ users_route.put(
 )
 
 
-// PUT /users/:id
+users_route.put(
+    "/users/:id",
+    describeRoute({
+        tags: ["Users"],
+        summary: "Update One",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Update User", one_schema),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "User's not found", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    id_param_validator(),
+    json_validator(update_one_req, "Invalid data for updating User"),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
+            create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
+            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
+        ]
+        
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+        if (!is_authorized) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let id = c.req.param("id")
+
+
+        // set() ignores fields with undefined value, so we don't need conditions
+        let new_data = await c.req.json()
+        let hashed_pass = undefined
+        if (new_data.password) {
+            hashed_pass = await hash_password(new_data.password)
+        }
+        let roles = undefined
+        if(new_data.roles) {
+            // Ensuring integrity, by removing duplocates and having Normal role as a must.
+            roles = new Set<RoleEnumType>(new_data.roles as RoleEnumType[])
+            roles.add(RoleEnum.NORMAL)
+            roles = [...roles]
+        }
+        await db.update(user_table).set({username: new_data.username, password: hashed_pass, roles: roles, updated_at: sql`NOW()`}).where(eq(user_table.id, id))
+
+        return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+    }    
+)
+
 
 // DELETE /users/me
 // DELETE /users/:id
