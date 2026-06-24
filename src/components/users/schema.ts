@@ -33,6 +33,11 @@ export const signup_req = object({
   roles: roles_schema
 });
 
+export const login_req = object({
+  username: username_schema,
+  password: password_schema,
+});
+
 export const user_authorized_res = object({
   user: one_schema,
   access_token: string(),  
