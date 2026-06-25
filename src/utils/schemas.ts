@@ -24,6 +24,8 @@ export const is_couplet_schema = fallback(boolean(), true)
 
 export const tags_schema = array(pipe(string(), trim(), minLength(3), maxLength(64)))
 
+export const qoute_schema = pipe(string(), trim(), minLength(4), maxLength(512));
+
 const date_schema = date()
 
 export const created_at = date_schema

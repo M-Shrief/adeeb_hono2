@@ -12,10 +12,9 @@ import {
 } from 'valibot';
 /////////////
 // utils
-import { uuid_schema, tags_schema, reviewed_schema, created_at, updated_at } from '../../utils/schemas.js';
+import { uuid_schema, qoute_schema, tags_schema, reviewed_schema, created_at, updated_at } from '../../utils/schemas.js';
 
 
-const qoute_schema = pipe(string(), trim(), minLength(4), maxLength(512));
 
 /** source is always used with optional()
 */ 
