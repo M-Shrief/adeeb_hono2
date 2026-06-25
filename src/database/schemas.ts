@@ -19,7 +19,7 @@ export const time_period_enum = pgEnum("time_period_enum", [TimePeriodEnum.UNDEF
 
 export const adeeb_table = pgTable('adeebs', {
     ...id,
-    name: varchar({ length: 256 }).unique().notNull(),
+    name: varchar({ length: 128 }).unique().notNull(),
     bio: varchar({ length: 1024 }).notNull(),
     time_period: time_period_enum().default(TimePeriodEnum.UNDEFINED),
     ...reviewed,
@@ -75,7 +75,7 @@ export const roles_enum = pgEnum("roles_enum", [RoleEnum.NORMAL, RoleEnum.MANAGM
 
 export const user_table = pgTable('users', {
     ...id,
-    username: varchar({ length: 256 }).unique().notNull(),
+    username: varchar({ length: 128 }).unique().notNull(),
     password: varchar({ length: 256 }).notNull(),
     roles: roles_enum().array().default([RoleEnum.NORMAL]).notNull(),
     ...timestamps
@@ -177,6 +177,7 @@ export const prose_qoutes_relations = relations(prose_qoutes_table, ({ one }) =>
 
 export const user_relations = relations(user_table, ({ many }) => ({
     orders: many(order_table),
+    prints: many(prints_table),
 }));
 
 
@@ -186,4 +187,15 @@ export const order_relations = relations(order_table, ({one, many}) => ({
 		references: [user_table.id],
 	}),
     prints: many(prints_table),
+}));
+
+export const print_relations = relations(prints_table, ({one, many}) => ({
+	order: one(order_table, {
+		fields: [prints_table.order_id],
+		references: [order_table.id],
+	}),
+    user: one(user_table, {
+		fields: [prints_table.user_id],
+		references: [user_table.id],
+	}),
 }));
