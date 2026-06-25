@@ -63,6 +63,7 @@ export const create_print_req = object({
 
 export const create_print_res = object({
   id: uuid_schema,
+
   font_type: font_type_schema,
   font_color: font_color_schema,
   outfit_type: outfit_type_schema,
@@ -97,6 +98,7 @@ export const one_order_schema = object({
   is_updateable: is_updateable,
   status: status_schema,
   reviewed: reviewed_schema,
+  prints: array(create_print_res)
 })
 
 export const create_order_req = object({

@@ -17,7 +17,6 @@ import { verify_token, create_permission, PERMISSIONS, check_permission, RoleEnu
 export const orders_route = new Hono() 
 
 
-// GET /orders
 orders_route.get(
     "/orders",
     describeRoute({
@@ -92,8 +91,65 @@ orders_route.get(
 
 // GET /orders/me
 // GET /orders/:id
+orders_route.get(
+    "/orders/:id",
+    describeRoute({
+        tags: ["Orders"],
+        summary: "Get One",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get Order", one_order_schema),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.NOT_FOUND, "NOT FOUND", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
 
-// POST /orders
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+        ]
+        
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_authorized) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let id = c.req.param("id")
+        let order = await db.query.order_table.findFirst({
+                columns: {
+                    created_at: false,
+                    updated_at: false,
+                },
+                with: {
+                    prints: {
+                        columns: {
+                            // already got them in order
+                            user_id: false, 
+                            order_id: false
+                        }
+                    }
+                },
+                where: (order_table, { eq }) => eq(order_table.id, id),
+            })
+        if (!order) {
+            return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
+        }
+ 
+        return c.json({order},HttpStatusCode.OK)        
+    }
+)
+
 orders_route.post(
     "/orders",
     describeRoute({
@@ -139,7 +195,6 @@ orders_route.post(
 
     }
 )
-// POST /orders/many
 orders_route.post(
     "/orders/many",
     describeRoute({
