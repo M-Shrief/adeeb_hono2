@@ -18,6 +18,78 @@ export const orders_route = new Hono()
 
 
 // GET /orders
+orders_route.get(
+    "/orders",
+    describeRoute({
+        tags: ["Orders"],
+        summary: "Get All",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.OK, "Get All Orders", get_all_schema(one_order_schema)),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    query_validator(queries_schema_for_get_all_req),
+    auth_header_validator(),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+        ]
+        
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+        if (!is_authorized) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+        
+        let limit = Number(c.req.query('limit')) || 100
+        let offset = Number(c.req.query('offset')) || 0
+
+        let [orders, counts] = await Promise.all([
+            await db.query.order_table.findMany({
+                columns: {
+                    created_at: false,
+                    updated_at: false,
+                },
+                with: {
+                    prints: {
+                        columns: {
+                            // already got them in order
+                            user_id: false, 
+                            order_id: false
+                        }
+                    }
+                },
+                limit: limit,
+                offset: offset,
+            }),
+            await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(order_table)
+        ])
+        
+        let total_count = counts[0] ? counts[0].total_count : 0 
+
+        return c.json(
+            {
+                data: orders,
+                limit, 
+                offset, 
+                total_count: total_count
+            },
+            HttpStatusCode.OK
+        )        
+    }
+)
+
 // GET /orders/me
 // GET /orders/:id
 
