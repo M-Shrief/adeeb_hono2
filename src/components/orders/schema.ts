@@ -120,8 +120,8 @@ export const create_order_res = object({
   prints: array(create_print_res)
 })
 
-export const create_many_req = array(create_order_req)
-export const create_many_res = object({
+export const create_many_orders_req = array(create_order_req)
+export const create_many_orders_res = object({
   created_items: array(create_order_res),
   success_count: number(),
   failed_count: number(),

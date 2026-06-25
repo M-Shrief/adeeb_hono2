@@ -6,7 +6,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { OrderStatusEnum, RoleEnum, order_table, prints_table } from "../../database/schemas.js"
-import { one_order_schema, create_order_req, create_order_res } from './schema.js'
+import { one_order_schema, create_order_req, create_order_res, create_many_orders_req, create_many_orders_res} from './schema.js'
 ///// Utils
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
@@ -68,7 +68,84 @@ orders_route.post(
     }
 )
 // POST /orders/many
+orders_route.post(
+    "/orders/many",
+    describeRoute({
+        tags: ["Orders"],
+        summary: "Create Many Orders",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.CREATED, "Successful added Orders", create_many_orders_res),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.UNPROCESSABLE_ENTITY, "Invalid data for orders", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    json_validator(create_many_orders_req, "Invalid data for Order"),
+    async(c) => {
+        let auth_header = c.req.header("Authorization")
+        let payload = await verify_token(auth_header!) // header was already validated
+        if (!payload) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
 
+        let permissions = payload["permissions"] as string[]
+        let authorized_list = [
+            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
+            create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
+            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
+        ]
+        
+        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+        if (!is_authorized) {
+            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        }
+
+
+        let data = await c.req.json()
+        let delivery_schedule = new Date()
+        delivery_schedule.setDate(delivery_schedule.getDate() + 7);
+
+        let new_orders: any[] = []
+        for (let order of data as any[]) {
+            let new_order = await db
+                .insert(order_table)
+                .values({ 
+                    name: order.name,
+                    phone: order.phone,
+                    address: order.address,
+                    reviewed: false,
+                    is_updateable: true,
+                    delivery_schedule: delivery_schedule,
+                    status: OrderStatusEnum.IN_PROGRESS,
+                    user_id: order.user_id
+                })
+                // .onConflictDoNothing()
+                .returning()
+                .then(res => res[0])
+
+            let prints_data = order.prints.map((item: any) => { return {...item, user_id: new_order.user_id, order_id: new_order.id}})
+            let new_prints = await db
+                .insert(prints_table)
+                .values([...prints_data])
+                .onConflictDoNothing()
+                .returning()
+
+            new_orders.push({...new_order, prints: new_prints})
+        }
+
+
+        return c.json(
+            {
+                created_items: new_orders,
+                success_count: new_orders.length,
+                failed_count: data.length - new_orders.length
+            },
+            HttpStatusCode.CREATED
+        )
+    }
+)
 // POST /orders/:order_id/prints
 
 // PUT /orders/:id
