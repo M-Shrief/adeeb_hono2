@@ -128,3 +128,15 @@ export const create_many_orders_res = object({
   success_count: number(),
   failed_count: number(),
 })
+
+export const update_order_req = object({
+  user_id: optional(uuid_schema),
+  name: optional(name_schema),
+  phone: optional(phone_schema),
+  address: optional(address_schema),
+  delivery_schedule: optional(delivery_schedule),
+  is_updateable: optional(is_updateable),
+  status: optional(status_schema),
+  reviewed: optional(reviewed_schema),
+  prints: optional(array(create_print_req))
+})

@@ -6,7 +6,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { OrderStatusEnum, RoleEnum, order_table, prints_table } from "../../database/schemas.js"
-import { one_order_schema, create_order_req, create_order_res, create_many_orders_req, create_many_orders_res, create_print_res, create_print_req} from './schema.js'
+import { one_order_schema, create_order_req, create_order_res, create_many_orders_req, create_many_orders_res, create_print_res, create_print_req, update_order_req} from './schema.js'
 ///// Utils
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, id_param_validator, json_validator, param_validator, query_validator } from '../../utils/validators.js'
@@ -411,7 +411,8 @@ orders_route.post(
                     if (existing_order.user_id != user_id) { // if the user is not the owner of the order
                         return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
                     }
-                    if (!existing_order.is_updateable) {
+                    // if it's owner, we need to check if he can update it or not
+                    if (!existing_order.is_updateable) { 
                         return c.json({ message: "Not Authorized to update order's data"}, HttpStatusCode.UNAUTHORIZED) 
                     }
                 }
@@ -434,7 +435,91 @@ orders_route.post(
         }
     }
 )
-// PUT /orders/:id
+
+orders_route.put(
+    "/orders/:id",
+    describeRoute({
+        tags: ["Orders"],
+        summary: "Update Order",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Updated Order successfully"),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.UNPROCESSABLE_ENTITY, "Invalid data for Order", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    id_param_validator(),
+    json_validator(update_order_req, "Invalid data for Order"),
+    async(c) => {
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let id = c.req.param("id")
+            let existing_order = await db.query.order_table.findFirst({
+                columns: {
+                    id: true,
+                    user_id: true,
+                    is_updateable: true,
+                },
+                where: (order_table, { eq }) => eq(order_table.id, id),
+            })
+
+            if (!existing_order) {
+                return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+            let data = await c.req.json()
+
+            let user: any = payload["user"]
+            let user_id: string = user["id"]
+            let permissions = payload["permissions"] as string[]
+
+            let is_adminstrator = check_if_adminstrator(permissions, PERMISSIONS.WRITE)
+            if (!is_adminstrator) {
+                if (!existing_order.user_id) { // if it doesn't belong to signed up user
+                    return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                } else { 
+                    if (existing_order.user_id != user_id) { // if the user is not the owner of the order
+                        return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                    }
+                    // if it's owner, we need to check if he can update it or not
+                    if (!existing_order.is_updateable) {
+                        return c.json({ message: "Not Authorized to update order's data"}, HttpStatusCode.UNAUTHORIZED) 
+                    }
+                    // if it's updated by the owner, then remove admin's related fields -- aka assign them to undefine.
+                    data.is_updateable = undefined
+                    data.status = undefined
+                    data.reviewed = undefined
+                }
+            }
+
+            // Ensuring data integrity
+
+            // If the order is aborted or marked as completed, then we make sure that is_updateable is False
+            if (data.status == OrderStatusEnum.COMPLETED || data.status == OrderStatusEnum.ABORTED) {
+                data.is_updateable = false
+            } else if (data.status == OrderStatusEnum.IN_PROGRESS) {
+                data.is_updateable = true
+            } else if (data.is_updateable) { 
+            // if it want to make is_updateable true, then we make sure status == "in progress".
+                data.status = OrderStatusEnum.IN_PROGRESS
+            }
+
+            await db.update(order_table).set({...data, updated_at: sql`NOW()`}).where(eq(order_table.id, id))
+
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+
+        } catch(e) {
+            logger.error({error:e}, "Error in PUT /orders/:id")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
 // PUT /orders/:order_id/prints/:print_id
 
 // DELETE /orders/:id
