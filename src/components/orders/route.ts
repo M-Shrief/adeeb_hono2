@@ -629,7 +629,7 @@ orders_route.delete(
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
 
         } catch(e) {
-            logger.error({error:e}, "Error in PUT /orders/:id")
+            logger.error({error:e}, "Error in Delete /orders/:id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -697,7 +697,7 @@ orders_route.delete(
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
 
         } catch(e) {
-            logger.error({error:e}, "Error in PUT /orders/:order_id/prints/:print_id")
+            logger.error({error:e}, "Error in DELETE /orders/:order_id/prints/:print_id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
