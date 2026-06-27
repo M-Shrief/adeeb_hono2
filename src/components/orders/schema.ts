@@ -78,6 +78,24 @@ export const create_print_res = object({
   prose_qoute_id: optional(uuid_schema),
 })
 
+export const update_print_req = object({
+  order_id: optional(uuid_schema),
+  user_id: optional(uuid_schema),
+
+  font_type: optional(font_type_schema),
+  font_color: optional(font_color_schema),
+  outfit_type: optional(outfit_type_schema),
+  outfit_color: optional(outfit_color_schema),
+
+  verses: optional(verses_schema),
+  is_couplet: optional(is_couplet_schema),
+  qoute: optional(qoute_schema),
+
+  poem_id: optional(uuid_schema),
+  chosen_verses_id: optional(uuid_schema),
+  prose_qoute_id: optional(uuid_schema),
+})
+
 
 // Orders /////////////////////
 const name_schema = pipe(string(), trim(), minLength(4), maxLength(128));
