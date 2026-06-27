@@ -32,60 +32,66 @@ orders_route.get(
     query_validator(queries_schema_for_get_all_req),
     auth_header_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
+        try {
+            let auth_header = c.req.header("Authorization")
         
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
 
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
-            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
-            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let limit = Number(c.req.query('limit')) || 100
-        let offset = Number(c.req.query('offset')) || 0
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+                create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let limit = Number(c.req.query('limit')) || 100
+            let offset = Number(c.req.query('offset')) || 0
 
-        let [orders, counts] = await Promise.all([
-            await db.query.order_table.findMany({
-                columns: {
-                    created_at: false,
-                    updated_at: false,
-                },
-                with: {
-                    prints: {
-                        columns: {
-                            // already got them in order
-                            user_id: false, 
-                            order_id: false
+            let [orders, counts] = await Promise.all([
+                await db.query.order_table.findMany({
+                    columns: {
+                        created_at: false,
+                        updated_at: false,
+                    },
+                    with: {
+                        prints: {
+                            columns: {
+                                // already got them in order
+                                user_id: false, 
+                                order_id: false
+                            }
                         }
-                    }
-                },
-                limit: limit,
-                offset: offset,
-            }),
-            await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(order_table)
-        ])
-        
-        let total_count = counts[0] ? counts[0].total_count : 0 
+                    },
+                    limit: limit,
+                    offset: offset,
+                }),
+                await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(order_table)
+            ])
+            
+            let total_count = counts[0] ? counts[0].total_count : 0 
 
-        return c.json(
-            {
-                data: orders,
-                limit, 
-                offset, 
-                total_count: total_count
-            },
-            HttpStatusCode.OK
-        )        
+            return c.json(
+                {
+                    data: orders,
+                    limit, 
+                    offset, 
+                    total_count: total_count
+                },
+                HttpStatusCode.OK
+            )        
+
+        } catch(e) {
+            logger.error({error:e}, "Error in signup req")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
     }
 )
 
@@ -104,62 +110,68 @@ orders_route.get(
     query_validator(queries_schema_for_get_all_req),
     auth_header_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
+        try {
+            let auth_header = c.req.header("Authorization")
+            
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
 
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.NORMAL, PERMISSIONS.READ)
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.NORMAL, PERMISSIONS.READ)
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
 
-        let user: any = payload["user"]
-        let user_id: string = user["id"]
-        
-        let limit = Number(c.req.query('limit')) || 100
-        let offset = Number(c.req.query('offset')) || 0
+            let user: any = payload["user"]
+            let user_id: string = user["id"]
+            
+            let limit = Number(c.req.query('limit')) || 100
+            let offset = Number(c.req.query('offset')) || 0
 
-        let [orders, counts] = await Promise.all([
-            await db.query.order_table.findMany({
-                columns: {
-                    created_at: false,
-                    updated_at: false,
-                },
-                with: {
-                    prints: {
-                        columns: {
-                            // already got them in order
-                            user_id: false, 
-                            order_id: false
+            let [orders, counts] = await Promise.all([
+                await db.query.order_table.findMany({
+                    columns: {
+                        created_at: false,
+                        updated_at: false,
+                    },
+                    with: {
+                        prints: {
+                            columns: {
+                                // already got them in order's data
+                                user_id: false, 
+                                order_id: false
+                            }
                         }
-                    }
-                },
-                limit: limit,
-                offset: offset,
-                where: (order_table, { eq }) => eq(order_table.user_id, user_id),
-            }),
-            await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(order_table).where(eq(order_table.user_id, user_id))
-        ])
-        
-        let total_count = counts[0] ? counts[0].total_count : 0 
+                    },
+                    limit: limit,
+                    offset: offset,
+                    where: (order_table, { eq }) => eq(order_table.user_id, user_id),
+                }),
+                await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(order_table).where(eq(order_table.user_id, user_id))
+            ])
+            
+            let total_count = counts[0] ? counts[0].total_count : 0 
 
-        return c.json(
-            {
-                data: orders,
-                limit, 
-                offset, 
-                total_count: total_count
-            },
-            HttpStatusCode.OK
-        )        
+            return c.json(
+                {
+                    data: orders,
+                    limit, 
+                    offset, 
+                    total_count: total_count
+                },
+                HttpStatusCode.OK
+            )        
+
+        } catch(e) {
+            logger.error({error:e}, "Error in signup req")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
     }
 )
 
@@ -179,47 +191,52 @@ orders_route.get(
     }),
     auth_header_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
+        try {
+            let auth_header = c.req.header("Authorization")
         
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
 
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
-            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
-            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let id = c.req.param("id")
-        let order = await db.query.order_table.findFirst({
-                columns: {
-                    created_at: false,
-                    updated_at: false,
-                },
-                with: {
-                    prints: {
-                        columns: {
-                            // already got them in order
-                            user_id: false, 
-                            order_id: false
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+                create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let id = c.req.param("id")
+            let order = await db.query.order_table.findFirst({
+                    columns: {
+                        created_at: false,
+                        updated_at: false,
+                    },
+                    with: {
+                        prints: {
+                            columns: {
+                                // already got them in order
+                                user_id: false, 
+                                order_id: false
+                            }
                         }
-                    }
-                },
-                where: (order_table, { eq }) => eq(order_table.id, id),
-            })
-        if (!order) {
-            return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
+                    },
+                    where: (order_table, { eq }) => eq(order_table.id, id),
+                })
+            if (!order) {
+                return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+    
+            return c.json({order},HttpStatusCode.OK)        
+        } catch(e) {
+            logger.error({error:e}, "Error in signup req")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
- 
-        return c.json({order},HttpStatusCode.OK)        
     }
 )
 
@@ -236,36 +253,42 @@ orders_route.post(
     }),
     json_validator(create_order_req, "Invalid data for Order"),
     async(c) => {
-        let data = await c.req.json()
-        let delivery_schedule = new Date()
-        delivery_schedule.setDate(delivery_schedule.getDate() + 7);
+        try {
+            let data = await c.req.json()
+            let delivery_schedule = new Date()
+            delivery_schedule.setDate(delivery_schedule.getDate() + 7);
 
-        let new_order = await db
-            .insert(order_table)
-            .values({ 
-                name: data.name,
-                phone: data.phone,
-                address: data.address,
-                reviewed: false,
-                is_updateable: true,
-                delivery_schedule: delivery_schedule,
-                status: OrderStatusEnum.IN_PROGRESS,
-                user_id: data.user_id
-            })
-            // .onConflictDoNothing()
-            .returning()
-            .then(res => res[0])
+            let new_order = await db
+                .insert(order_table)
+                .values({ 
+                    name: data.name,
+                    phone: data.phone,
+                    address: data.address,
+                    reviewed: false,
+                    is_updateable: true,
+                    delivery_schedule: delivery_schedule,
+                    status: OrderStatusEnum.IN_PROGRESS,
+                    user_id: data.user_id
+                })
+                // .onConflictDoNothing()
+                .returning()
+                .then(res => res[0])
 
-        let prints_data = data.prints.map((item: any) => { return {...item, user_id: new_order.user_id, order_id: new_order.id}})
-        let new_prints = await db
-            .insert(prints_table)
-            .values([...prints_data])
-            .onConflictDoNothing()
-            .returning()
+            let prints_data = data.prints.map((item: any) => { return {...item, user_id: new_order.user_id, order_id: new_order.id}})
+            let new_prints = await db
+                .insert(prints_table)
+                .values([...prints_data])
+                .onConflictDoNothing()
+                .returning()
 
 
-        return c.json({...new_order, prints: new_prints}, HttpStatusCode.CREATED)
+            return c.json({...new_order, prints: new_prints}, HttpStatusCode.CREATED)
 
+
+        } catch(e) {
+            logger.error({error:e}, "Error in signup req")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
     }
 )
 orders_route.post(
@@ -284,70 +307,76 @@ orders_route.post(
     auth_header_validator(),
     json_validator(create_many_orders_req, "Invalid data for Order"),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
+                create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
+                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+
+            let data = await c.req.json()
+            let delivery_schedule = new Date()
+            delivery_schedule.setDate(delivery_schedule.getDate() + 7);
+
+            let new_orders: any[] = []
+            for (let order of data as any[]) {
+                let new_order = await db
+                    .insert(order_table)
+                    .values({ 
+                        name: order.name,
+                        phone: order.phone,
+                        address: order.address,
+                        reviewed: false,
+                        is_updateable: true,
+                        delivery_schedule: delivery_schedule,
+                        status: OrderStatusEnum.IN_PROGRESS,
+                        user_id: order.user_id
+                    })
+                    // .onConflictDoNothing()
+                    .returning()
+                    .then(res => res[0])
+
+                let prints_data = order.prints.map((item: any) => { return {...item, user_id: new_order.user_id, order_id: new_order.id}})
+                let new_prints = await db
+                    .insert(prints_table)
+                    .values([...prints_data])
+                    .onConflictDoNothing()
+                    .returning()
+
+                new_orders.push({...new_order, prints: new_prints})
+            }
+
+
+            return c.json(
+                {
+                    created_items: new_orders,
+                    success_count: new_orders.length,
+                    failed_count: data.length - new_orders.length
+                },
+                HttpStatusCode.CREATED
+            )
+
+        } catch(e) {
+            logger.error({error:e}, "Error in signup req")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
-
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
-            create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
-            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-
-
-        let data = await c.req.json()
-        let delivery_schedule = new Date()
-        delivery_schedule.setDate(delivery_schedule.getDate() + 7);
-
-        let new_orders: any[] = []
-        for (let order of data as any[]) {
-            let new_order = await db
-                .insert(order_table)
-                .values({ 
-                    name: order.name,
-                    phone: order.phone,
-                    address: order.address,
-                    reviewed: false,
-                    is_updateable: true,
-                    delivery_schedule: delivery_schedule,
-                    status: OrderStatusEnum.IN_PROGRESS,
-                    user_id: order.user_id
-                })
-                // .onConflictDoNothing()
-                .returning()
-                .then(res => res[0])
-
-            let prints_data = order.prints.map((item: any) => { return {...item, user_id: new_order.user_id, order_id: new_order.id}})
-            let new_prints = await db
-                .insert(prints_table)
-                .values([...prints_data])
-                .onConflictDoNothing()
-                .returning()
-
-            new_orders.push({...new_order, prints: new_prints})
-        }
-
-
-        return c.json(
-            {
-                created_items: new_orders,
-                success_count: new_orders.length,
-                failed_count: data.length - new_orders.length
-            },
-            HttpStatusCode.CREATED
-        )
     }
 )
-// POST /orders/:order_id/prints
 
+// POST /orders/:order_id/prints
 // PUT /orders/:id
 // PUT /orders/:order_id/prints/:print_id
 
