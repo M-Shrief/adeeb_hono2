@@ -11,7 +11,7 @@ import { one_order_schema, create_order_req, create_order_res, create_many_order
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema, describe_jwt_security} from '../../utils/api.js';
-import { verify_token, create_permission, PERMISSIONS, check_permission, RoleEnumType } from "../../utils/auth.js"
+import { verify_token, create_permission, PERMISSIONS, check_permission, check_if_adminstrator} from "../../utils/auth.js"
 
 
 export const orders_route = new Hono() 
@@ -41,13 +41,8 @@ orders_route.get(
             }
 
             let permissions = payload["permissions"] as string[]
-            let authorized_list = [
-                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
-                create_permission(RoleEnum.DBA, PERMISSIONS.READ),
-                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
-            ]
-            
-            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+
+            let is_authorized = check_if_adminstrator(permissions, PERMISSIONS.READ)
             if (!is_authorized) {
                 return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
             }
@@ -200,13 +195,7 @@ orders_route.get(
             }
 
             let permissions = payload["permissions"] as string[]
-            let authorized_list = [
-                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
-                create_permission(RoleEnum.DBA, PERMISSIONS.READ),
-                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
-            ]
-            
-            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+            let is_authorized = check_if_adminstrator(permissions, PERMISSIONS.READ)
             if (!is_authorized) {
                 return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
             }
@@ -315,13 +304,7 @@ orders_route.post(
             }
 
             let permissions = payload["permissions"] as string[]
-            let authorized_list = [
-                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
-                create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
-                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
-            ]
-            
-            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+            let is_authorized = check_if_adminstrator(permissions, PERMISSIONS.WRITE)
             if (!is_authorized) {
                 return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
             }

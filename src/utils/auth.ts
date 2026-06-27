@@ -108,6 +108,15 @@ export const check_permission = (authorized_list: string[], permissions: string[
     return is_authorized
 } 
 
+export const check_if_adminstrator = (user_permissions: string[], op: PERMISSION = "read"): boolean => {
+    let authorized_list = [
+        create_permission(RoleEnum.MANAGMENT, op),
+        create_permission(RoleEnum.DBA, op),
+        create_permission(RoleEnum.ANALYTICS, op),
+    ]
+
+    return check_permission(authorized_list, user_permissions, op)
+}
 
 // Example of middlware, to be modified to ask for permissions
 // in write operations for routes in other components
