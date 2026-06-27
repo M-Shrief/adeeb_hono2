@@ -223,7 +223,7 @@ orders_route.get(
                 return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
             }
     
-            return c.json({order},HttpStatusCode.OK)        
+            return c.json(order,HttpStatusCode.OK)        
         } catch(e) {
             logger.error({error:e}, "Error in signup req")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
