@@ -13,6 +13,7 @@ import { compress } from 'hono/compress';
 import { rateLimiter } from "hono-rate-limiter";
 import { trimTrailingSlash } from 'hono/trailing-slash'
 import { bodyLimit } from 'hono/body-limit'
+import { timeout } from 'hono/timeout'
 // utils
 import  {logger} from "./utils/logger.js"
 import { HttpStatusCode, base_response_schema, get_described_route } from "./utils/api.js"
@@ -53,6 +54,7 @@ app.use(
     keyGenerator: (c) => c.req.header("x-forwarded-for") ?? "", // Use IP address as key
   })
 );
+
 
 app.get(
   '/', 
@@ -147,6 +149,9 @@ app.get(
     darkMode: true
   })
 )
+
+// Add timeout for api's routes, default time out is 5 seconds
+app.use('/api/*', timeout(5000))
 
 app.route("/api/v1", adeeb_route)
 app.route("/api/v1", poem_route)
