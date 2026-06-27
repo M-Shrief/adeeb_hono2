@@ -12,6 +12,7 @@ import { cors } from 'hono/cors';
 import { compress } from 'hono/compress';
 import { rateLimiter } from "hono-rate-limiter";
 import { trimTrailingSlash } from 'hono/trailing-slash'
+import { bodyLimit } from 'hono/body-limit'
 // utils
 import  {logger} from "./utils/logger.js"
 import { HttpStatusCode, base_response_schema, get_described_route } from "./utils/api.js"
@@ -35,6 +36,14 @@ app.use(
 app.use(trimTrailingSlash()) // set standard to trim trailing slash to all requests
 app.use(secureHeaders());
 app.use(cors());
+app.use(
+  bodyLimit({
+    maxSize: 1000 * 1024, // 1MB
+    onError: (c) => {
+      return c.text('payload overflow', HttpStatusCode.PAYLOAD_TOO_LARGE)
+    },
+  })
+)
 app.use(compress());
 // Apply rate limiting middleware globally, and will apply it surgically later to each route.
 app.use(
