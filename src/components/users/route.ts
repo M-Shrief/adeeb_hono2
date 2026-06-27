@@ -33,45 +33,51 @@ users_route.get(
     query_validator(queries_schema_for_get_all_req),
     auth_header_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        try {
+            let auth_header = c.req.header("Authorization")
+            
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+                create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let limit = Number(c.req.query('limit')) || 100
+            let offset = Number(c.req.query('offset')) || 0
+
+            let { id, username, roles} = getTableColumns(user_table) // select all columns, except created_at & updated_at.
+            let [users, counts] = await Promise.all([
+                await db.select({ id, username, roles }).from(user_table).limit(limit).offset(offset),
+                await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(user_table)
+            ])
+            
+            let total_count = counts[0] ? counts[0].total_count : 0 
+
+            return c.json(
+                {
+                    data: users,
+                    limit, 
+                    offset, 
+                    total_count: total_count
+                },
+                HttpStatusCode.OK
+            )        
+
+        } catch(e) {
+            logger.error({error: e}, "Error in GET /users")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
-
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
-            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
-            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let limit = Number(c.req.query('limit')) || 100
-        let offset = Number(c.req.query('offset')) || 0
-
-        let { id, username, roles} = getTableColumns(user_table) // select all columns, except created_at & updated_at.
-        let [users, counts] = await Promise.all([
-            await db.select({ id, username, roles }).from(user_table).limit(limit).offset(offset),
-            await db.select({total_count: sql<number>`count(*) OVER()`.mapWith(Number)}).from(user_table)
-        ])
-        
-        let total_count = counts[0] ? counts[0].total_count : 0 
-
-        return c.json(
-            {
-                data: users,
-                limit, 
-                offset, 
-                total_count: total_count
-            },
-            HttpStatusCode.OK
-        )        
     }
 )
 
@@ -90,39 +96,45 @@ users_route.get(
     }),
     auth_header_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.NORMAL, PERMISSIONS.READ),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let user = payload["user"] as any
+            let id = user.id
+
+            let existing_user = await db.query.user_table.findFirst({
+                columns: {
+                    id: true,
+                    username: true,
+                    roles: true,
+                },
+                where: (user_table, { eq }) => eq(user_table.id, id),
+            })
+
+            if (!existing_user) {
+                return c.json({message: "User's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+
+            return c.json(existing_user, HttpStatusCode.OK)
+
+        } catch(e) {
+            logger.error({error: e}, "Error in GET /users/me")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
-
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.NORMAL, PERMISSIONS.READ),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let user = payload["user"] as any
-        let id = user.id
-
-        let existing_user = await db.query.user_table.findFirst({
-            columns: {
-                id: true,
-                username: true,
-                roles: true,
-            },
-            where: (user_table, { eq }) => eq(user_table.id, id),
-        })
-
-        if (!existing_user) {
-            return c.json({message: "User's not Found"}, HttpStatusCode.NOT_FOUND)
-        }
-
-        return c.json(existing_user, HttpStatusCode.OK)
     }    
 )
 
@@ -142,39 +154,45 @@ users_route.get(
     auth_header_validator(),
     id_param_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
 
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
-            create_permission(RoleEnum.DBA, PERMISSIONS.READ),
-            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let id = c.req.param("id")
-        let existing_user = await db.query.user_table.findFirst({
-            columns: {
-                id: true,
-                username: true,
-                roles: true,
-            },
-            where: (user_table, { eq }) => eq(user_table.id, id),
-        })
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.READ),
+                create_permission(RoleEnum.DBA, PERMISSIONS.READ),
+                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.READ),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.READ)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let id = c.req.param("id")
+            let existing_user = await db.query.user_table.findFirst({
+                columns: {
+                    id: true,
+                    username: true,
+                    roles: true,
+                },
+                where: (user_table, { eq }) => eq(user_table.id, id),
+            })
 
-        if (!existing_user) {
-            return c.json({message: "User's not Found"}, HttpStatusCode.NOT_FOUND)
-        }
+            if (!existing_user) {
+                return c.json({message: "User's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
 
-        return c.json(existing_user, HttpStatusCode.OK)
+            return c.json(existing_user, HttpStatusCode.OK)
+
+        } catch(e) {
+            logger.error({error: e}, "Error in GET /users/:id")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
+        }
     }    
 )
 
@@ -213,7 +231,7 @@ users_route.post(
 
             return c.json({user: {id: new_user.id, username: new_user.username, roles: new_user.roles}, access_token}, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error in signup req")
+            logger.error({error:e}, "Error in POST /users/signup")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -258,7 +276,7 @@ users_route.post(
 
             return c.json({user: {id: existing_user.id, username: existing_user.username, roles: existing_user.roles}, access_token}, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error in login req")
+            logger.error({error:e}, "Error is POST /users/signup")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -280,34 +298,39 @@ users_route.put(
     auth_header_validator(),
     json_validator(update_current_req, "Invalid data for updating User"),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
 
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.NORMAL, PERMISSIONS.WRITE),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let user = payload["user"] as any
-        let id = user.id
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.NORMAL, PERMISSIONS.WRITE),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let user = payload["user"] as any
+            let id = user.id
 
-        // set() ignores fields with undefined value, so we don't need conditions
-        let new_data = await c.req.json()
-        let hashed_pass = undefined
-        if (new_data.password) {
-            hashed_pass = await hash_password(new_data.password)
-        }
-        await db.update(user_table).set({username: new_data.username, password: hashed_pass, updated_at: sql`NOW()`}).where(eq(user_table.id, id))
+            // set() ignores fields with undefined value, so we don't need conditions
+            let new_data = await c.req.json()
+            let hashed_pass = undefined
+            if (new_data.password) {
+                hashed_pass = await hash_password(new_data.password)
+            }
+            await db.update(user_table).set({username: new_data.username, password: hashed_pass, updated_at: sql`NOW()`}).where(eq(user_table.id, id))
 
-        return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+        } catch(e) {
+            logger.error({error: e}, "Error in PUT /users/me")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
+        }
     }    
 )
 
@@ -329,43 +352,49 @@ users_route.put(
     id_param_validator(),
     json_validator(update_one_req, "Invalid data for updating User"),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
+                create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
+                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let id = c.req.param("id")
+
+
+            // set() ignores fields with undefined value, so we don't need conditions
+            let new_data = await c.req.json()
+            let hashed_pass = undefined
+            if (new_data.password) {
+                hashed_pass = await hash_password(new_data.password)
+            }
+            let roles = undefined
+            if(new_data.roles) {
+                // Ensuring integrity, by removing duplocates and having Normal role as a must.
+                roles = new Set<RoleEnumType>(new_data.roles as RoleEnumType[])
+                roles.add(RoleEnum.NORMAL)
+                roles = [...roles]
+            }
+            await db.update(user_table).set({username: new_data.username, password: hashed_pass, roles: roles, updated_at: sql`NOW()`}).where(eq(user_table.id, id))
+
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)            
+        } catch(e) {
+            logger.error({error: e}, "Error in PUT /users/:id")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
 
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
-            create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
-            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let id = c.req.param("id")
-
-
-        // set() ignores fields with undefined value, so we don't need conditions
-        let new_data = await c.req.json()
-        let hashed_pass = undefined
-        if (new_data.password) {
-            hashed_pass = await hash_password(new_data.password)
-        }
-        let roles = undefined
-        if(new_data.roles) {
-            // Ensuring integrity, by removing duplocates and having Normal role as a must.
-            roles = new Set<RoleEnumType>(new_data.roles as RoleEnumType[])
-            roles.add(RoleEnum.NORMAL)
-            roles = [...roles]
-        }
-        await db.update(user_table).set({username: new_data.username, password: hashed_pass, roles: roles, updated_at: sql`NOW()`}).where(eq(user_table.id, id))
-
-        return c.newResponse(null, HttpStatusCode.NO_CONTENT)
     }    
 )
 
@@ -385,28 +414,34 @@ users_route.delete(
     }),
     auth_header_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.NORMAL, PERMISSIONS.WRITE),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let user = payload["user"] as any
+            let id = user.id
+
+            await db.delete(user_table).where(eq(user_table.id, id))
+
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+            
+        } catch(e) {
+            logger.error({error: e}, "Error in DELETE /users/me")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
-
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.NORMAL, PERMISSIONS.WRITE),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let user = payload["user"] as any
-        let id = user.id
-
-        await db.delete(user_table).where(eq(user_table.id, id))
-
-        return c.newResponse(null, HttpStatusCode.NO_CONTENT)
     }    
 )
 
@@ -426,28 +461,33 @@ users_route.delete(
     auth_header_validator(),
     id_param_validator(),
     async(c) => {
-        let auth_header = c.req.header("Authorization")
-        let payload = await verify_token(auth_header!) // header was already validated
-        if (!payload) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let permissions = payload["permissions"] as string[]
+            let authorized_list = [
+                create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
+                create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
+                create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
+            ]
+            
+            let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
+            if (!is_authorized) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+            
+            let id = c.req.param("id")
+
+            await db.delete(user_table).where(eq(user_table.id, id))
+
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)            
+        } catch(e) {
+            logger.error({error: e}, "Error in DELETE /users/:id")
+            return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
-
-        let permissions = payload["permissions"] as string[]
-        let authorized_list = [
-            create_permission(RoleEnum.MANAGMENT, PERMISSIONS.WRITE),
-            create_permission(RoleEnum.DBA, PERMISSIONS.WRITE),
-            create_permission(RoleEnum.ANALYTICS, PERMISSIONS.WRITE),
-        ]
-        
-        let is_authorized = check_permission(authorized_list, permissions, PERMISSIONS.WRITE)
-        if (!is_authorized) {
-            return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-        }
-        
-        let id = c.req.param("id")
-
-        await db.delete(user_table).where(eq(user_table.id, id))
-
-        return c.newResponse(null, HttpStatusCode.NO_CONTENT)
     }    
 )
