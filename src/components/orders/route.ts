@@ -634,4 +634,71 @@ orders_route.delete(
         }
     }
 )
-// DELETE /orders/:order_id/prints/:print_id
+
+orders_route.delete(
+    "/orders/:order_id/prints/:print_id",
+    describeRoute({
+        tags: ["Orders"],
+        summary: "Delete Print",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Print successfully"),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    param_validator(object({ order_id: uuid_schema }), "Invalid Order's id"),
+    param_validator(object({ print_id: uuid_schema }), "Invalid Print's id"),
+    async(c) => {
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let order_id = c.req.param("order_id")
+            let existing_order = await db.query.order_table.findFirst({
+                columns: {
+                    id: true,
+                    user_id: true,
+                    is_updateable: true,
+                },
+                where: (order_table, { eq }) => eq(order_table.id, order_id),
+            })
+
+            if (!existing_order) {
+                return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+            let user: any = payload["user"]
+            let user_id: string = user["id"]
+            let permissions = payload["permissions"] as string[]
+
+            let is_adminstrator = check_if_adminstrator(permissions, PERMISSIONS.WRITE)
+            if (!is_adminstrator) {
+                if (!existing_order.user_id) { // if it doesn't belong to signed up user
+                    return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                } else { 
+                    if (existing_order.user_id != user_id) { // if the user is not the owner of the order
+                        return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                    }
+                    // if it's owner, we need to check if he can delete it or not
+                    if (!existing_order.is_updateable) {
+                        return c.json({ message: "Not Authorized to delete print"}, HttpStatusCode.UNAUTHORIZED) 
+                    }
+                }
+            }
+
+
+            let print_id = c.req.param("print_id")
+            await db.delete(prints_table).where(eq(prints_table.id, print_id))
+
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+
+        } catch(e) {
+            logger.error({error:e}, "Error in PUT /orders/:order_id/prints/:print_id")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
