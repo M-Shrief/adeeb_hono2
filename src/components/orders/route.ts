@@ -86,7 +86,7 @@ orders_route.get(
             )        
 
         } catch(e) {
-            logger.error({error:e}, "Error in signup req")
+            logger.error({error:e}, "Error in GET /orders/:id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -166,7 +166,7 @@ orders_route.get(
             )        
 
         } catch(e) {
-            logger.error({error:e}, "Error in signup req")
+            logger.error({error:e}, "Error in GET /orders/me")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -225,7 +225,7 @@ orders_route.get(
     
             return c.json(order,HttpStatusCode.OK)        
         } catch(e) {
-            logger.error({error:e}, "Error in signup req")
+            logger.error({error:e}, "Error in GET /orders/:id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -277,7 +277,7 @@ orders_route.post(
 
 
         } catch(e) {
-            logger.error({error:e}, "Error in signup req")
+            logger.error({error:e}, "Error in POST /orders")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -356,7 +356,7 @@ orders_route.post(
             )
 
         } catch(e) {
-            logger.error({error:e}, "Error in signup req")
+            logger.error({error:e}, "Error in POST /orders/many")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -430,7 +430,7 @@ orders_route.post(
             return c.json(new_print, HttpStatusCode.CREATED)
 
         } catch(e) {
-            logger.error({error:e}, "Error in signup req")
+            logger.error({error:e}, "Error in POST /orders/:order_id/prints")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
