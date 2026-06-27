@@ -593,5 +593,45 @@ orders_route.put(
     }
 )
 
-// DELETE /orders/:id
+
+orders_route.delete(
+    "/orders/:id",
+    describeRoute({
+        tags: ["Orders"],
+        summary: "Delete Order",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Order successfully"),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    id_param_validator(),
+    async(c) => {
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let permissions = payload["permissions"] as string[]
+            let is_adminstrator = check_if_adminstrator(permissions, PERMISSIONS.WRITE)
+            if (!is_adminstrator) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let id = c.req.param("id")
+            await db.delete(prints_table).where(eq(prints_table.order_id, id))
+            await db.delete(order_table).where(eq(order_table.id, id))
+
+            return c.newResponse(null, HttpStatusCode.NO_CONTENT)
+
+        } catch(e) {
+            logger.error({error:e}, "Error in PUT /orders/:id")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
 // DELETE /orders/:order_id/prints/:print_id
