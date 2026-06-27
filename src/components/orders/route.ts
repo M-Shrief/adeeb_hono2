@@ -6,12 +6,14 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
 import { db } from "../../database/index.js"
 import { OrderStatusEnum, RoleEnum, order_table, prints_table } from "../../database/schemas.js"
-import { one_order_schema, create_order_req, create_order_res, create_many_orders_req, create_many_orders_res} from './schema.js'
+import { one_order_schema, create_order_req, create_order_res, create_many_orders_req, create_many_orders_res, create_print_res, create_print_req} from './schema.js'
 ///// Utils
 import { logger } from '../../utils/logger.js';
-import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
+import { auth_header_validator, id_param_validator, json_validator, param_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema, describe_jwt_security} from '../../utils/api.js';
 import { verify_token, create_permission, PERMISSIONS, check_permission, check_if_adminstrator} from "../../utils/auth.js"
+import { object } from 'valibot';
+import { uuid_schema } from '../../utils/schemas.js';
 
 
 export const orders_route = new Hono() 
@@ -280,6 +282,7 @@ orders_route.post(
         }
     }
 )
+
 orders_route.post(
     "/orders/many",
     describeRoute({
@@ -359,7 +362,78 @@ orders_route.post(
     }
 )
 
-// POST /orders/:order_id/prints
+orders_route.post(
+    "/orders/:order_id/prints",
+    describeRoute({
+        tags: ["Orders"],
+        summary: "Add Print",
+        ...describe_jwt_security,
+        responses: {
+           ...get_described_route(HttpStatusCode.CREATED, "Successful added Prints", create_print_res),
+           ...get_described_route(HttpStatusCode.UNAUTHORIZED, "Not Authorized", base_response_schema),
+           ...get_described_route(HttpStatusCode.UNPROCESSABLE_ENTITY, "Invalid data for Print", base_response_schema),
+           ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
+        },
+    }),
+    auth_header_validator(),
+    param_validator(object({ order_id: uuid_schema }), "Invalid Order's id"),
+    json_validator(create_print_req, "Invalid data for Print"),
+    async(c) => {
+        try {
+            let auth_header = c.req.header("Authorization")
+            let payload = await verify_token(auth_header!) // header was already validated
+            if (!payload) {
+                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+            }
+
+            let order_id = c.req.param("order_id")
+            let existing_order = await db.query.order_table.findFirst({
+                columns: {
+                    id: true,
+                    user_id: true,
+                    is_updateable: true,
+                },
+                where: (order_table, { eq }) => eq(order_table.id, order_id),
+            })
+
+            if (!existing_order) {
+                return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
+            }
+
+            let user: any = payload["user"]
+            let user_id: string = user["id"]
+            let permissions = payload["permissions"] as string[]
+            let is_adminstrator = check_if_adminstrator(permissions, PERMISSIONS.WRITE)
+            if (!is_adminstrator) {
+                if (!existing_order.user_id) { // if it doesn't belong to signed up user
+                    return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                } else { 
+                    if (existing_order.user_id != user_id) { // if the user is not the owner of the order
+                        return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                    }
+                    if (!existing_order.is_updateable) {
+                        return c.json({ message: "Not Authorized to update order's data"}, HttpStatusCode.UNAUTHORIZED) 
+                    }
+                }
+            }
+
+
+            let data = await c.req.json()
+            let print_data = {...data, user_id: user_id, order_id: order_id}
+            let new_print = await db
+                .insert(prints_table)
+                .values(print_data)
+                .onConflictDoNothing()
+                .returning()
+
+            return c.json(new_print, HttpStatusCode.CREATED)
+
+        } catch(e) {
+            logger.error({error:e}, "Error in signup req")
+            return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
+        }
+    }
+)
 // PUT /orders/:id
 // PUT /orders/:order_id/prints/:print_id
 
