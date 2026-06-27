@@ -51,7 +51,7 @@ adeeb_route.get(
                 HttpStatusCode.OK
             )
         } catch(e) {
-            logger.error({error:e}, "Error getting all Adeebs")
+            logger.error({error:e}, "Error in GET /adeebs")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
 
@@ -91,7 +91,7 @@ adeeb_route.get(
             return c.json(adeeb, HttpStatusCode.OK)
 
         } catch(e) {
-            logger.error({error:e}, "Error getting Adeeb by ID")
+            logger.error({error:e}, "Error in GET /adeebs/:id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -126,7 +126,7 @@ adeeb_route.post(
             }
             return c.json(new_adeeb, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: create Adeeb")
+            logger.error({error:e}, "Error in POST /adeebs")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -154,7 +154,7 @@ adeeb_route.post(
 
             return c.json({created_items: new_adeebs, success_count: new_adeebs.length, failed_count: new_data.length - new_adeebs.length}, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: creating multiple Adeebs")
+            logger.error({error:e}, "Error in POST /adeebs/many")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -180,7 +180,7 @@ adeeb_route.put(
             await db.update(adeeb_table).set({...data, updated_at: sql`NOW()`}).where(eq(adeeb_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Updating Adeeb")
+            logger.error({error: e}, "Error in PUT /adeebs/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -204,7 +204,7 @@ adeeb_route.delete(
             await db.delete(adeeb_table).where(eq(adeeb_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Deleting Adeeb")
+            logger.error({error: e}, "Error Delete /adeebs/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }

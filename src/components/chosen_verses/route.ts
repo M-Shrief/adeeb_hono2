@@ -51,7 +51,7 @@ chosen_verses_route.get(
                 HttpStatusCode.OK
             )
         } catch(e) {
-            logger.error({error:e}, "Error getting all ChosenVerses")
+            logger.error({error:e}, "Error in GET /chosen_verses")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
 
@@ -93,7 +93,7 @@ chosen_verses_route.get(
             return c.json(chosen_verse, HttpStatusCode.OK)
 
         } catch(e) {
-            logger.error({error:e}, "Error getting ChosenVerse by ID")
+            logger.error({error:e}, "Error in GET /chosen_verses/:id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -128,7 +128,7 @@ chosen_verses_route.post(
             }
             return c.json(new_chosen_verse, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: create ChosenVerse")
+            logger.error({error:e}, "Error in POST /chosen_verses")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -156,7 +156,7 @@ chosen_verses_route.post(
 
             return c.json({created_items: new_chosen_verses, success_count: new_chosen_verses.length, failed_count: new_data.length - new_chosen_verses.length}, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: creating multiple ChosenVerses")
+            logger.error({error:e}, "Error in POST /chosen_verses/many")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -182,7 +182,7 @@ chosen_verses_route.put(
             await db.update(chosen_verses_table).set({...data, updated_at: sql`NOW()`}).where(eq(chosen_verses_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Updating ChosenVerse")
+            logger.error({error: e}, "Error in PUT /chosen_verses/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -206,7 +206,7 @@ chosen_verses_route.delete(
             await db.delete(chosen_verses_table).where(eq(chosen_verses_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Deleting ChosenVerse")
+            logger.error({error: e}, "Error in DELETE /chosen_verses/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }

@@ -51,7 +51,7 @@ prose_qoute_route.get(
                 HttpStatusCode.OK
             )
         } catch(e) {
-            logger.error({error:e}, "Error getting all ProseQoutes")
+            logger.error({error:e}, "Error in GET /prose_qoutes")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
 
@@ -91,7 +91,7 @@ prose_qoute_route.get(
             return c.json(prose_qoute, HttpStatusCode.OK)
 
         } catch(e) {
-            logger.error({error:e}, "Error getting ProseQoute by ID")
+            logger.error({error:e}, "Error in GET /prose_qoutes/:id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -126,7 +126,7 @@ prose_qoute_route.post(
             }
             return c.json(new_prose_qoute, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: create ProseQoute")
+            logger.error({error:e}, "Error in POST /prose_qoutes")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -154,7 +154,7 @@ prose_qoute_route.post(
 
             return c.json({created_items: new_prose_qoutes, success_count: new_prose_qoutes.length, failed_count: new_data.length - new_prose_qoutes.length}, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: creating multiple ProseQoutes")
+            logger.error({error:e}, "Error in POST /prose_qoutes/many")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -180,7 +180,7 @@ prose_qoute_route.put(
             await db.update(prose_qoutes_table).set({...data, updated_at: sql`NOW()`}).where(eq(prose_qoutes_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Updating ProseQoute")
+            logger.error({error: e}, "Error in PUT /prose_qoutes/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -204,7 +204,7 @@ prose_qoute_route.delete(
             await db.delete(prose_qoutes_table).where(eq(prose_qoutes_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Deleting ProseQoute")
+            logger.error({error: e}, "Error in DELETE /prose_qoutes/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }

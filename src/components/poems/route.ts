@@ -51,7 +51,7 @@ poem_route.get(
                 HttpStatusCode.OK
             )
         } catch(e) {
-            logger.error({error:e}, "Error getting all Adeebs")
+            logger.error({error:e}, "Error in GET /poems")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -91,7 +91,7 @@ poem_route.get(
 
             return c.json(poem, HttpStatusCode.OK)
         } catch(e) {
-            logger.error({error:e}, "Error getting all Adeebs")
+            logger.error({error:e}, "Error in GET /poems/:id")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -126,7 +126,7 @@ poem_route.post(
             }
             return c.json(new_poem, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: create Poem")
+            logger.error({error:e}, "Error in POST /poems")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -154,7 +154,7 @@ poem_route.post(
 
             return c.json({created_items: new_poems, success_count: new_poems.length, failed_count: new_data.length - new_poems.length}, HttpStatusCode.CREATED)
         } catch(e) {
-            logger.error({error:e}, "Error: creating multiple Poems")
+            logger.error({error:e}, "Error in POST /poems/many")
             return c.json({message: "Unknown error, try again later"}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -180,7 +180,7 @@ poem_route.put(
             await db.update(poem_table).set({...data, updated_at: sql`NOW()`}).where(eq(poem_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Updating Poem")
+            logger.error({error: e}, "Error in PUT /poems/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }
@@ -204,7 +204,7 @@ poem_route.delete(
             await db.delete(poem_table).where(eq(poem_table.id, id))
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
-            logger.error({error: e}, "Error Deleting Poem")
+            logger.error({error: e}, "Error in DELETE /poems/:id")
             return c.json({message: "Bad Request, try again later."}, HttpStatusCode.BAD_REQUEST)
         }
     }
