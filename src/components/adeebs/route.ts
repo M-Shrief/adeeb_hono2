@@ -7,6 +7,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 import { db } from "../../database/index.js"
 import { adeeb_table } from "../../database/schemas.js"
 import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
+import { cache, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
@@ -73,6 +74,14 @@ adeeb_route.get(
     async(c) => {
         try {
             let id = c.req.param("id")
+
+            let cache_key = format_key_by_id("adeebs", id)
+            let cache_res = await cache_get(cache_key)
+
+            if(cache_res) {
+                return c.json(cache_res, HttpStatusCode.OK)
+            }
+
             let { created_at, updated_at, ...rest} = getTableColumns(adeeb_table) // select all columns, except created_at & updated_at.
             let adeeb = await db.query.adeeb_table.findFirst({
                 columns: {
@@ -87,7 +96,7 @@ adeeb_route.get(
             if (!adeeb) {
                 return c.json({message: "Adeeb's not Found"}, HttpStatusCode.NOT_FOUND)
             }
-
+            await cache_set(cache_key, adeeb)
             return c.json(adeeb, HttpStatusCode.OK)
 
         } catch(e) {
