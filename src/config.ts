@@ -19,6 +19,7 @@ export const DB_URL = `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PO
 
 export const NODE_ENV = process.env.NODE_ENV as "dev" | "prod"
 
+export const {VALKEY_HOST, VALKEY_PASSWORD, VALKEY_PORT} = process.env
 
 export let JWT_PRIVATE_KEY: string = '';
 export let JWT_PUBLIC_KEY: string = '';

@@ -33,6 +33,7 @@
     "@hono/structured-logger": "^0.1.0",
     "@scalar/hono-api-reference": "^0.11.4",
     "@valibot/to-json-schema": "^1.7.1",
+    "@valkey/valkey-glide": "^2.4.2",
     "bcrypt": "^6.0.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.26",

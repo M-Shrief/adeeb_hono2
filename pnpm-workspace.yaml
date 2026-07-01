@@ -1,5 +1,6 @@
 allowBuilds:
   bcrypt: false
   esbuild: false
+  protobufjs: false
 minimumReleaseAgeExclude:
   - '@hono/node-server@2.0.5'
