@@ -7,6 +7,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 import { db } from "../../database/index.js"
 import { OrderStatusEnum, RoleEnum, order_table, prints_table } from "../../database/schemas.js"
 import { one_order_schema, create_order_req, create_order_res, create_many_orders_req, create_many_orders_res, create_print_res, create_print_req, update_order_req, update_print_req} from './schema.js'
+import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
 ///// Utils
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, id_param_validator, json_validator, param_validator, query_validator } from '../../utils/validators.js'
@@ -18,6 +19,7 @@ import { uuid_schema } from '../../utils/schemas.js';
 
 export const orders_route = new Hono() 
 
+const cache_prefix = "orders" 
 
 orders_route.get(
     "/orders",
@@ -199,22 +201,31 @@ orders_route.get(
             let user_id: string = user["id"]
 
             let id = c.req.param("id")
-            let order = await db.query.order_table.findFirst({
-                    columns: {
-                        created_at: false,
-                        updated_at: false,
-                    },
-                    with: {
-                        prints: {
-                            columns: {
-                                // already got them in order
-                                user_id: false, 
-                                order_id: false
+
+            let cache_key = format_key_by_id(cache_prefix, id)
+            let cache_res = await cache_get(cache_key)
+            let order: any
+        
+            if(cache_res) {
+                order = cache_res
+            } else {
+                order = await db.query.order_table.findFirst({
+                        columns: {
+                            created_at: false,
+                            updated_at: false,
+                        },
+                        with: {
+                            prints: {
+                                columns: {
+                                    // already got them in order
+                                    user_id: false, 
+                                    order_id: false
+                                }
                             }
-                        }
-                    },
-                    where: (order_table, { eq }) => eq(order_table.id, id),
-                })
+                        },
+                        where: (order_table, { eq }) => eq(order_table.id, id),
+                    })
+            }
 
             if (!order) {
                 return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
