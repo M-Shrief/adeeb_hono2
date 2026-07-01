@@ -42,5 +42,12 @@ export const cache_set = async(key: string, value: any) => {
 }
 
 
+export const cache_del = async(key: string) => {
+    try {
+        await cache.del([key])
+    } catch(e) {
+        logger.error({error: e}, `Cache set error for ${key} key`)
+    }
+}
 
 export const format_key_by_id = (prefix: string, id: string) => prefix + ":" + id 

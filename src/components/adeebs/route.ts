@@ -7,7 +7,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 import { db } from "../../database/index.js"
 import { adeeb_table } from "../../database/schemas.js"
 import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
-import { cache, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
+import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
@@ -187,6 +187,11 @@ adeeb_route.put(
             let data = await c.req.json()
             
             await db.update(adeeb_table).set({...data, updated_at: sql`NOW()`}).where(eq(adeeb_table.id, id))
+
+            // Delete from cache after update to prevent showing old data
+            let cache_key = format_key_by_id("adeebs", id)
+            await cache_del(cache_key)
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
             logger.error({error: e}, "Error in PUT /adeebs/:id")
@@ -211,6 +216,11 @@ adeeb_route.delete(
             let id = c.req.param("id")
             
             await db.delete(adeeb_table).where(eq(adeeb_table.id, id))
+
+            // Delete from cache after delete to prevent showing old data
+            let cache_key = format_key_by_id("adeebs", id)
+            await cache_del(cache_key)
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
             logger.error({error: e}, "Error Delete /adeebs/:id")
