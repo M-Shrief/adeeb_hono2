@@ -530,6 +530,11 @@ orders_route.put(
 
             await db.update(order_table).set({...data, updated_at: sql`NOW()`}).where(eq(order_table.id, id))
 
+            // Delete from cache after update to prevent showing old data
+            let cache_key = format_key_by_id(cache_prefix, id)
+            await cache_del(cache_key)
+ 
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
 
         } catch(e) {
@@ -602,6 +607,10 @@ orders_route.put(
             let print_id = c.req.param("print_id")
             await db.update(prints_table).set({...data, updated_at: sql`NOW()`}).where(eq(prints_table.id, print_id))
 
+            // Delete from cache after update to prevent showing old data
+            let cache_key = format_key_by_id(cache_prefix, order_id)
+            await cache_del(cache_key)
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
 
         } catch(e) {
@@ -643,6 +652,11 @@ orders_route.delete(
             let id = c.req.param("id")
             await db.delete(prints_table).where(eq(prints_table.order_id, id))
             await db.delete(order_table).where(eq(order_table.id, id))
+
+            // Delete from cache after update to prevent showing old data
+            let cache_key = format_key_by_id(cache_prefix, id)
+            await cache_del(cache_key)
+
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
 
@@ -711,6 +725,10 @@ orders_route.delete(
 
             let print_id = c.req.param("print_id")
             await db.delete(prints_table).where(eq(prints_table.id, print_id))
+
+            // Delete from cache after update to prevent showing old data
+            let cache_key = format_key_by_id(cache_prefix, order_id)
+            await cache_del(cache_key)
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
 
