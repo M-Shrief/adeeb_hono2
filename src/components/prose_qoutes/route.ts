@@ -7,6 +7,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 import { db } from "../../database/index.js"
 import { prose_qoutes_table } from "../../database/schemas.js"
 import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
+import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
@@ -73,6 +74,14 @@ prose_qoute_route.get(
     async(c) => {
         try {
             let id = c.req.param("id")
+
+            let cache_key = format_key_by_id("prose_qoutes", id)
+            let cache_res = await cache_get(cache_key)
+
+            if(cache_res) {
+                return c.json(cache_res, HttpStatusCode.OK)
+            }
+
             let prose_qoute = await db.query.prose_qoutes_table.findFirst({
                 columns: {
                     id: true,
@@ -87,6 +96,8 @@ prose_qoute_route.get(
             if (!prose_qoute) {
                 return c.json({message: "ProseQoute's not Found"}, HttpStatusCode.NOT_FOUND)
             }
+
+            await cache_set(cache_key, prose_qoute)
 
             return c.json(prose_qoute, HttpStatusCode.OK)
 
@@ -178,6 +189,11 @@ prose_qoute_route.put(
             let data = await c.req.json()
             
             await db.update(prose_qoutes_table).set({...data, updated_at: sql`NOW()`}).where(eq(prose_qoutes_table.id, id))
+
+            // Delete from cache after update to prevent showing old data
+            let cache_key = format_key_by_id("prose_qoutes", id)
+            await cache_del(cache_key)
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
             logger.error({error: e}, "Error in PUT /prose_qoutes/:id")
@@ -202,6 +218,11 @@ prose_qoute_route.delete(
             let id = c.req.param("id")
             
             await db.delete(prose_qoutes_table).where(eq(prose_qoutes_table.id, id))
+
+            // Delete from cache after delete to prevent showing old data
+            let cache_key = format_key_by_id("prose_qoutes", id)
+            await cache_del(cache_key)
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
             logger.error({error: e}, "Error in DELETE /prose_qoutes/:id")
