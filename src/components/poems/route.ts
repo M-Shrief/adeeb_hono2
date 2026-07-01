@@ -15,6 +15,8 @@ import { logger } from '../../utils/logger.js';
 
 export const poem_route = new Hono()  
 
+const cache_prefix = "poems" 
+
 
 poem_route.get(
     "/poems",
@@ -74,7 +76,7 @@ poem_route.get(
         try {
             let id = c.req.param("id")
 
-            let cache_key = format_key_by_id("poems", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             let cache_res = await cache_get(cache_key)
 
             if(cache_res) {
@@ -191,7 +193,7 @@ poem_route.put(
             await db.update(poem_table).set({...data, updated_at: sql`NOW()`}).where(eq(poem_table.id, id))
             
             // Delete from cache after update to prevent showing old data
-            let cache_key = format_key_by_id("poems", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             await cache_del(cache_key)
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
@@ -220,7 +222,7 @@ poem_route.delete(
             await db.delete(poem_table).where(eq(poem_table.id, id))
 
             // Delete from cache after delete to prevent showing old data
-            let cache_key = format_key_by_id("poems", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             await cache_del(cache_key)
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)

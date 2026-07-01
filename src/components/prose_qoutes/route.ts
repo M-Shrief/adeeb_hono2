@@ -15,6 +15,7 @@ import { logger } from '../../utils/logger.js';
 
 export const prose_qoute_route = new Hono()  
 
+const cache_prefix = "prose_qoutes" 
 
 prose_qoute_route.get(
     "/prose_qoutes",
@@ -75,7 +76,7 @@ prose_qoute_route.get(
         try {
             let id = c.req.param("id")
 
-            let cache_key = format_key_by_id("prose_qoutes", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             let cache_res = await cache_get(cache_key)
 
             if(cache_res) {
@@ -191,7 +192,7 @@ prose_qoute_route.put(
             await db.update(prose_qoutes_table).set({...data, updated_at: sql`NOW()`}).where(eq(prose_qoutes_table.id, id))
 
             // Delete from cache after update to prevent showing old data
-            let cache_key = format_key_by_id("prose_qoutes", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             await cache_del(cache_key)
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
@@ -220,7 +221,7 @@ prose_qoute_route.delete(
             await db.delete(prose_qoutes_table).where(eq(prose_qoutes_table.id, id))
 
             // Delete from cache after delete to prevent showing old data
-            let cache_key = format_key_by_id("prose_qoutes", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             await cache_del(cache_key)
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)

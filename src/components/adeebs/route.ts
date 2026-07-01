@@ -15,6 +15,8 @@ import { logger } from '../../utils/logger.js';
 
 export const adeeb_route = new Hono()  
 
+const cache_prefix = "adeebs" 
+
 
 adeeb_route.get(
     "/adeebs",
@@ -75,7 +77,7 @@ adeeb_route.get(
         try {
             let id = c.req.param("id")
 
-            let cache_key = format_key_by_id("adeebs", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             let cache_res = await cache_get(cache_key)
 
             if(cache_res) {
@@ -189,7 +191,7 @@ adeeb_route.put(
             await db.update(adeeb_table).set({...data, updated_at: sql`NOW()`}).where(eq(adeeb_table.id, id))
 
             // Delete from cache after update to prevent showing old data
-            let cache_key = format_key_by_id("adeebs", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             await cache_del(cache_key)
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
@@ -218,7 +220,7 @@ adeeb_route.delete(
             await db.delete(adeeb_table).where(eq(adeeb_table.id, id))
 
             // Delete from cache after delete to prevent showing old data
-            let cache_key = format_key_by_id("adeebs", id)
+            let cache_key = format_key_by_id(cache_prefix, id)
             await cache_del(cache_key)
 
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
