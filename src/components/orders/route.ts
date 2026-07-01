@@ -194,14 +194,10 @@ orders_route.get(
             let payload = await verify_token(auth_header!) // header was already validated
             if (!payload) {
                 return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-            }
+            }            
+            let user: any = payload["user"]
+            let user_id: string = user["id"]
 
-            let permissions = payload["permissions"] as string[]
-            let is_authorized = check_if_adminstrator(permissions, PERMISSIONS.READ)
-            if (!is_authorized) {
-                return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
-            }
-            
             let id = c.req.param("id")
             let order = await db.query.order_table.findFirst({
                     columns: {
@@ -219,9 +215,20 @@ orders_route.get(
                     },
                     where: (order_table, { eq }) => eq(order_table.id, id),
                 })
+
             if (!order) {
                 return c.json({message: "Order's not Found"}, HttpStatusCode.NOT_FOUND)
             }
+
+            let permissions = payload["permissions"] as string[]
+            let is_authorized = check_if_adminstrator(permissions, PERMISSIONS.READ)
+            if (!is_authorized) {
+                if (!order.user_id) { // if it doesn't belong to signed up user
+                    return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                } else if (order.user_id != user_id) { // if the user is not the owner of the order
+                    return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+                }
+            }            
     
             return c.json(order,HttpStatusCode.OK)        
         } catch(e) {
