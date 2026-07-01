@@ -4,6 +4,7 @@ import {
 } from "hono-openapi";
 import { sql, getTableColumns, eq } from 'drizzle-orm';
 /////
+import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
 import { db } from "../../database/index.js"
 import { poem_table } from "../../database/schemas.js"
 import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
@@ -72,6 +73,14 @@ poem_route.get(
     async(c) => {
         try {
             let id = c.req.param("id")
+
+            let cache_key = format_key_by_id("poems", id)
+            let cache_res = await cache_get(cache_key)
+
+            if(cache_res) {
+                return c.json(cache_res, HttpStatusCode.OK)
+            }
+
             let { created_at, updated_at, ...rest} = getTableColumns(poem_table) // select all columns, except created_at & updated_at.
             let poem = await db.query.poem_table.findFirst({
                 columns: {
@@ -88,6 +97,8 @@ poem_route.get(
             if (!poem) {
                 return c.json({message: "Poem's not Found"}, HttpStatusCode.NOT_FOUND)
             }
+
+            await cache_set(cache_key, poem)
 
             return c.json(poem, HttpStatusCode.OK)
         } catch(e) {
@@ -178,6 +189,11 @@ poem_route.put(
             let data = await c.req.json()
             
             await db.update(poem_table).set({...data, updated_at: sql`NOW()`}).where(eq(poem_table.id, id))
+            
+            // Delete from cache after update to prevent showing old data
+            let cache_key = format_key_by_id("poems", id)
+            await cache_del(cache_key)
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
             logger.error({error: e}, "Error in PUT /poems/:id")
@@ -202,6 +218,11 @@ poem_route.delete(
             let id = c.req.param("id")
             
             await db.delete(poem_table).where(eq(poem_table.id, id))
+
+            // Delete from cache after delete to prevent showing old data
+            let cache_key = format_key_by_id("poems", id)
+            await cache_del(cache_key)
+
             return c.newResponse(null, HttpStatusCode.NO_CONTENT)
         } catch(e) {
             logger.error({error: e}, "Error in DELETE /poems/:id")
