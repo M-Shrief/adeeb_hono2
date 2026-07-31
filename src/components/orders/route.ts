@@ -498,6 +498,7 @@ orders_route.put(
                 data.is_updateable = undefined
                 data.status = undefined
                 data.reviewed = undefined
+                data.user_id = undefined
             }
 
             // Ensuring data integrity
