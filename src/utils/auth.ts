@@ -118,6 +118,19 @@ export const check_if_adminstrator = (user_permissions: string[], op: PERMISSION
     return check_permission(authorized_list, user_permissions, op)
 }
 
+export const check_ownership = (item_owner_id: string | null, jwt_payload: JWTPayload) => {
+    let user: any = jwt_payload["user"]
+    let user_id: string = user["id"]
+    if (!item_owner_id) { // if it doesn't belong to signed up user
+        return false
+    }
+    if (item_owner_id != user_id) { // if the user is not the owner of the order
+        return false
+    }
+    return true
+}
+
+
 // Example of middlware, to be modified to ask for permissions
 // in write operations for routes in other components
 
