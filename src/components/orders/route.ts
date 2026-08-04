@@ -7,7 +7,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 import { db } from "../../database/index.js"
 import { OrderStatusEnum, RoleEnum, order_table, prints_table } from "../../database/schemas.js"
 import { one_order_schema, create_order_req, create_order_res, create_many_orders_req, create_many_orders_res, create_print_res, create_print_req, update_order_req, update_print_req} from './schema.js'
-import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
+import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/utils.js"
 ///// Utils
 import { logger } from '../../utils/logger.js';
 import { auth_header_validator, id_param_validator, json_validator, param_validator, query_validator } from '../../utils/validators.js'

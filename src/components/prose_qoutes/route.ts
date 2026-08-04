@@ -7,7 +7,7 @@ import { sql, getTableColumns, eq } from 'drizzle-orm';
 import { db } from "../../database/index.js"
 import { prose_qoutes_table } from "../../database/schemas.js"
 import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
-import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/index.js"
+import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/utils.js"
 ///// Utils
 import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
 import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
