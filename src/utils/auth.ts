@@ -6,6 +6,8 @@ import { object, string } from 'valibot';
 ////
 import { JWT_PRIVATE_KEY, JWT_PUBLIC_KEY } from '../config.js'
 import { RoleEnum } from '../database/schemas.js';
+import { createMiddleware } from 'hono/factory';
+import { HttpStatusCode } from './api.js';
 
 export const auth_header_schema = object({ authorization: string()})
 
@@ -131,13 +133,24 @@ export const check_ownership = (item_owner_id: string | null, jwt_payload: JWTPa
 }
 
 
-// Example of middlware, to be modified to ask for permissions
-// in write operations for routes in other components
+/**
+ * A middleware used to check if adminstrator authority in WRITE operations in domain components, 
+ * like: POST/PUT/DELETE operations in adeebs component.
+ */
+export const verify_adminstrator = () =>
+  createMiddleware(async (c, next) => {
+    let auth_header = c.req.header("Authorization")
+    
+    let payload = await verify_token(auth_header!) // header was already validated
+    if (!payload) {
+        return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+    }
 
-// export const isAuthorized = (permission: string) =>
-//   createMiddleware(async (c, next) => {
-//     const permissions = c.get('jwtPayload').permissions as string[];
-//     if (!permissions || permissions.includes(permission) == false)
-//       return c.json('Not Authorized', HttpStatusCode.UNAUTHORIZED);
-//     await next();
-//   });
+    let permissions = payload["permissions"] as string[]
+    let is_adminstrator = check_if_adminstrator(permissions, PERMISSIONS.READ)
+    if (!is_adminstrator) {
+        return c.json({ message: "Not Authorized"}, HttpStatusCode.UNAUTHORIZED) 
+    }
+
+    await next();
+  });
