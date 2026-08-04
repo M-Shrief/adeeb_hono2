@@ -9,9 +9,10 @@ import { db } from "../../database/index.js"
 import { poem_table } from "../../database/schemas.js"
 import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
 ///// Utils
-import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
-import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
+import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
+import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema, describe_jwt_security } from '../../utils/api.js';
 import { logger } from '../../utils/logger.js';
+import { verify_adminstrator } from '../../utils/auth.js';
 
 export const poem_route = new Hono()  
 
@@ -115,12 +116,15 @@ poem_route.post(
     describeRoute({
         tags: ["Poems"],
         summary: "Create One",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful added Poem", create_one_res),
            ...get_described_route(HttpStatusCode.CONFLICT, "Poem already exists", base_response_schema),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),    
     json_validator(create_one_req, "Invalid data for Poem"),
     async(c) => {
         try {
@@ -150,11 +154,14 @@ poem_route.post(
     describeRoute({
         tags: ["Poems"],
         summary: "Create Many",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful response", create_many_res),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema)
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),
     json_validator(create_many_req, "Invalid data, can't be used to create many Poems"),
     async(c) => {
         try {
@@ -178,11 +185,14 @@ poem_route.put(
     describeRoute({
         tags: ["Poems"],
         summary: "Update One",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Updated Successfully"),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request, try again later.", base_response_schema),
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),
     id_param_validator(),
     json_validator(update_req, "Invalid data for update"),
     async(c) => {
@@ -209,11 +219,14 @@ poem_route.delete(
     describeRoute({
         tags: ["Poems"],
         summary: "Delete One",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Successfully"),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request, try again later.", base_response_schema),
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),
     id_param_validator(),
     async(c) => {
         try {
