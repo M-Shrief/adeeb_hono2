@@ -9,9 +9,10 @@ import { prose_qoutes_table } from "../../database/schemas.js"
 import { one_schema, create_many_req, create_many_res, create_one_req, create_one_res, update_req } from './schema.js'
 import { cache_del, cache_get, cache_set, format_key_by_id } from "../../cache/utils.js"
 ///// Utils
-import { id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
-import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema } from '../../utils/api.js';
+import { auth_header_validator, id_param_validator, json_validator, query_validator } from '../../utils/validators.js'
+import { HttpStatusCode, base_response_schema, queries_schema_for_get_all_req, get_described_route, get_all_schema, describe_jwt_security } from '../../utils/api.js';
 import { logger } from '../../utils/logger.js';
+import { verify_adminstrator } from '../../utils/auth.js';
 
 export const prose_qoute_route = new Hono()  
 
@@ -114,12 +115,15 @@ prose_qoute_route.post(
     describeRoute({
         tags: ["ProseQoutes"],
         summary: "Create One",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful added ProseQoute", create_one_res),
            ...get_described_route(HttpStatusCode.CONFLICT, "ProseQoute already exists", base_response_schema),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema),
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),
     json_validator(create_one_req, "Invalid data for ProseQoute"),
     async(c) => {
         try {
@@ -149,11 +153,14 @@ prose_qoute_route.post(
     describeRoute({
         tags: ["ProseQoutes"],
         summary: "Create Many",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.OK, "Successful response", create_many_res),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request", base_response_schema)
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),
     json_validator(create_many_req, "Invalid data, can't be used to create many ProseQoutes"),
     async (c) => {
         try {
@@ -177,11 +184,14 @@ prose_qoute_route.put(
     describeRoute({
         tags: ["ProseQoutes"],
         summary: "Update One",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Updated Successfully"),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request, try again later.", base_response_schema),
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),
     id_param_validator(),
     json_validator(update_req, "Invalid data for update"),
     async(c) => {
@@ -208,11 +218,14 @@ prose_qoute_route.delete(
     describeRoute({
         tags: ["ProseQoutes"],
         summary: "Delete One",
+        ...describe_jwt_security,
         responses: {
            ...get_described_route(HttpStatusCode.NO_CONTENT, "Deleted Successfully"),
            ...get_described_route(HttpStatusCode.BAD_REQUEST, "Bad Request, try again later.", base_response_schema),
         },
     }),
+    auth_header_validator(),
+    verify_adminstrator(),
     id_param_validator(),
     async (c) => {
         try {
